@@ -85,6 +85,8 @@ public:
 	// CFR methods
 	bool is_terminal_node() const;
 	bool is_chance_node() const;
+	bool showdown() const;
+	int best_hand(bool p) const;
 	int pot_size() const;
 	int utility(int player) const;
 	int get_num_actions() const;

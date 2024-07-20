@@ -5,9 +5,9 @@
 int main() {
 	std::cout << "Working." << "\n";
 
-	uint32_t suita = 0b00000010000000000000000000000100;
-    uint32_t suitb = 0b00000000001000000000000000000100;
-    uint32_t suitc = 0b00000000000100000000000000000000;
+	uint32_t suita = 0b00000000111000000000110011000000;
+    uint32_t suitb = 0b00000000000000000000000000000000;
+    uint32_t suitc = 0b00000000000000000000000000000000;
     uint32_t suitd = 0b00000000000000000000000000000000;
     uint8_t  turn  = 						 0b00000000;
 	uint8_t  rivr  = 						 0b00000000;
@@ -40,4 +40,7 @@ int main() {
     std::cout << hasher(gs) << "\n";
 
     std::cout << gs.pot_size() << "\n";
+
+    std::cout << gs.best_hand(0) << "\n";
+    std::cout << gs.best_hand(1);
 }

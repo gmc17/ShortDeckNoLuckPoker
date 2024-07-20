@@ -167,8 +167,62 @@ bool GameState::is_terminal_node() const {
     return false;
 }
 
-int GameState::best_hand(bool player) const {
+std::array<int, 6> flush_masks = {0b111110000, 0b011111000, 0b001111100, 0b000111110, 0b000011111, 0b100001111};
+std::array<int, 9> single_masks = {0b100000000, 0b010000000, 0b001000000, 0b000100000, 0b000010000, 0b000001000, 0b000000100, 0b000000010, 0b000000001};
+
+
+int GameState::best_hand(bool p) const {
+    uint8_t suita_player;
+    uint8_t suitb_player;
+    uint8_t suitc_player;
+    uint8_t suitd_player;
+
+    if (p==0) suita_player = suita & 0b111111111;
+    else suita_player = (suita>>9) & 0b111111111;
+    if (p==0) suitb_player = suitb & 0b111111111;
+    else suitb_player = (suitb>>9) & 0b111111111;
+    if (p==0) suitc_player = suitc & 0b111111111;
+    else suitc_player = (suitc>>9) & 0b111111111;
+    if (p==0) suitd_player = suitd & 0b111111111;
+    else suitd_player = (suitd>>9) & 0b111111111;
+
+    uint8_t suita_all = (suita>>18) | suita_player;
+    uint8_t suitb_all = (suitb>>18) | suitb_player;
+    uint8_t suitc_all = (suitc>>18) | suitc_player;
+    uint8_t suitd_all = (suitd>>18) | suitd_player;
+
+    // STRAIGHT FLUSH
     
+    for (int i=0; i<6; i++) {
+        if (((suita_all & flush_masks[i]) == flush_masks[i]) ||
+            ((suitb_all & flush_masks[i]) == flush_masks[i]) ||
+            ((suitc_all & flush_masks[i]) == flush_masks[i]) || 
+            ((suitd_all & flush_masks[i]) == flush_masks[i])) {
+            return 800000 + (6-i)*10000;
+        }
+    }
+
+    // QUADS
+
+    uint8_t tempa = suita_all;
+    uint8_t tempb = suitb_all;
+    uint8_t tempc = suitc_all;
+    uint8_t tempd = suitd_all;
+    int best = -1;
+    int kicker = -1;
+
+    for (int i=0; i<9; i++) {
+        if ((tempa % 2) == (tempb % 2) && 
+            (tempb % 2) == (tempc % 2) && 
+            (tempc % 2) == (tempd % 2)) {
+            best = i;
+        }
+
+    }
+
+    if (best != -1) return 700000 + (i)*10000 + 0;
+
+    return 1;
 }
 
 bool GameState::showdown() const {
@@ -183,6 +237,7 @@ bool GameState::showdown() const {
      * 7: quads
      * 8: straight flush
      */
+    return 0;
 }
 
 int GameState::pot_size() const {
