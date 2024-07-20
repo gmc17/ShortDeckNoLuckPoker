@@ -192,7 +192,7 @@ int GameState::best_hand(bool p) const {
     uint8_t suitd_all = (suitd>>18) | suitd_player;
 
     // STRAIGHT FLUSH
-    
+
     for (int i=0; i<6; i++) {
         if (((suita_all & flush_masks[i]) == flush_masks[i]) ||
             ((suitb_all & flush_masks[i]) == flush_masks[i]) ||
@@ -212,15 +212,24 @@ int GameState::best_hand(bool p) const {
     int kicker = -1;
 
     for (int i=0; i<9; i++) {
-        if ((tempa % 2) == (tempb % 2) && 
-            (tempb % 2) == (tempc % 2) && 
-            (tempc % 2) == (tempd % 2)) {
+        if ((suita_all & single_masks[i]) && 
+            (suitb_all & single_masks[i]) &&
+            (suitc_all & single_masks[i]) &&
+            (suitd_all & single_masks[i])) {
             best = i;
+            for (int k=8; k>0; k--) {
+                if ((k != i) && 
+                    ((suita_all & single_masks[k]) || 
+                     (suitb_all & single_masks[k]) ||
+                     (suita_all & single_masks[k]) ||
+                     (suita_all & single_masks[k]))) {
+                    kicker = k;
+                }
+            }
         }
-
     }
 
-    if (best != -1) return 700000 + (i)*10000 + 0;
+    if (best != -1) return 700000 + best*10000 + kicker*1000;
 
     return 1;
 }
