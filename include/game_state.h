@@ -91,7 +91,9 @@ public:
 	int pot_size() const;
 	int utility(int player) const;
 	int num_actions() const;
+	int num_chance_actions() const;
 	void apply_action(int action);
+	void apply_chance_action(int action);
 	
 	uint32_t suita;
 	uint32_t suitb;
@@ -132,4 +134,3 @@ namespace std {
         }
     };
 }
-

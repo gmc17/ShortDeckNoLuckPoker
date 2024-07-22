@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <initializer_list>
 #include <iostream>
+#include <bitset>
 
 GameState::GameState(uint32_t suita, 
                      uint32_t suitb, 
@@ -46,7 +47,7 @@ std::string GameState::to_string() const {
                                               "A"};
     
     // Small blind cards
-    ss << "SB cards: ";
+    ss << "SB cards:   ";
 
     for (int i=0; i<4; i++) {
         std::vector<int> hole_cards;
@@ -65,7 +66,7 @@ std::string GameState::to_string() const {
     ss << "\n";
 
     // Big blind cards
-    ss << "BB cards: ";
+    ss << "BB cards:   ";
 
     for (int i=0; i<4; i++) {
         std::vector<int> hole_cards;
@@ -83,8 +84,8 @@ std::string GameState::to_string() const {
     }
     ss << "\n";
 
-    // Community cards
-    ss << "Community cards: ";
+    // Flop cards
+    ss << "Flop cards: ";
     
     for (int i=0; i<4; i++) {
         std::vector<int> comm_cards;
@@ -101,13 +102,45 @@ std::string GameState::to_string() const {
         }
     }
     ss << "\n";
+
+    if (turn_history % 2) {
+        ss << "Turn card:  ";
+        
+        int turn_rank = turn & 0b1111;
+        int turn_suit = (turn>>4) & 0b11;
+
+        ss << card_names[turn_rank] << suit_names[turn_suit];
+    }
+
+    ss << "\n";
+
+    if (rivr_history % 2) {
+        ss << "River card: ";
+        
+        int rivr_rank = rivr & 0b1111;
+        int rivr_suit = (rivr>>4) & 0b11;
+
+        ss << card_names[rivr_rank] << suit_names[rivr_suit];
+    }
+
+    ss << "\n";
     
     return ss.str();
 }
 
 bool GameState::operator==(const GameState& other) const {
-    return suita == other.suita && suitb == other.suitb && 
-           suitc == other.suitc && suitd == other.suitd && player == other.player;
+    return suita == other.suita && 
+           suitb == other.suitb && 
+           suitc == other.suitc && 
+           suitd == other.suitd &&
+           turn == other.turn &&
+           rivr == other.rivr &&
+           flop_history == other.flop_history &&
+           turn_history == other.turn_history &&
+           rivr_history == other.rivr_history &&
+           call_preflop == other.call_preflop &&
+           is_information_set == other.is_information_set &&
+           player == other.player;
 }
 
 bool GameState::is_terminal_node() const {
@@ -145,7 +178,6 @@ bool GameState::is_terminal_node() const {
 }
 
 bool GameState::is_chance_node() const {
-
     //  Preflop
     if (call_preflop == 1 && 
         flop_history == 0) 
@@ -192,6 +224,26 @@ int GameState::best_hand(bool p) const {
     uint16_t suitb_all = (suitb>>18) | suitb_player;
     uint16_t suitc_all = (suitc>>18) | suitc_player;
     uint16_t suitd_all = (suitd>>18) | suitd_player;
+
+    if (turn_history % 2) {
+        int turn_rank = turn & 0b1111;
+        int turn_suit = (turn>>4) & 0b11;
+        
+        if (turn_suit == 0) suita_all |= (0b1<<turn_rank);
+        if (turn_suit == 0b1) suitb_all |= (0b1<<turn_rank);
+        if (turn_suit == 0b10) suitc_all |= (0b1<<turn_rank);
+        if (turn_suit == 0b11) suitd_all |= (0b1<<turn_rank);
+    }
+    
+    if (rivr_history % 2) {
+        int rivr_rank = rivr & 0b1111;
+        int rivr_suit = (rivr>>4) & 0b11;
+        
+        if (rivr_suit == 0) suita_all |= (0b1<<rivr_rank);
+        if (rivr_suit == 0b1) suitb_all |= (0b1<<rivr_rank);
+        if (rivr_suit == 0b10) suitc_all |= (0b1<<rivr_rank);
+        if (rivr_suit == 0b11) suitd_all |= (0b1<<rivr_rank);
+    }
 
     /************************* Straight flush *************************/
 
@@ -568,6 +620,30 @@ int GameState::num_actions() const {
     return -1;
 }
 
+int GameState::num_chance_actions() const {
+    //  Preflop
+    if (call_preflop == 1 && 
+        flop_history == 0) 
+        return (34*33*32)/6;
+
+    //  Flop
+    if ((flop_history == 0b1011 ||        // check check
+         flop_history == 0b1101 ||        // bet call
+         flop_history == 0b110101 ||      // bet raise call
+         flop_history == 0b11010011 ||    // check bet raise call
+         flop_history == 0b110011) &&     // check bet call
+         turn_history % 2 == 0)           // ensure turn has not already happened       
+        return 31;
+
+    //  Turn
+    if ((turn_history == 0b101 ||          // check check
+         turn_history == 0b110) &&         // bet call
+         rivr_history % 2 == 0)           // ensure river has not already happened  
+        return 30;
+
+    return 0;
+}
+
 void GameState::apply_action(int action) {
     
     /************************* Preflop *************************/
@@ -613,8 +689,8 @@ void GameState::apply_action(int action) {
             flop_history = 0b1101; // bet call
             player = 0;
         } else if (action == 2) {
-            flop_history = 0b10101 // bet raise
-            player = 0
+            flop_history = 0b10101; // bet raise
+            player = 0;
         }
     }
 
@@ -713,8 +789,8 @@ void GameState::apply_action(int action) {
             rivr_history = 0b1101; // bet call
             player = 0;
         } else if (action == 2) {
-            rivr_history = 0b10101 // bet raise
-            player = 0
+            rivr_history = 0b10101; // bet raise
+            player = 0;
         }
     }
 
@@ -750,4 +826,26 @@ void GameState::apply_action(int action) {
             player = 0;
         }
     }
+}
+
+void GameState::apply_chance_action(int action) {
+    /**
+     * Flop
+     * 
+     * suita 000000000
+     * suitb 000000000
+     * suitc 000000000
+     * suitd 000000000
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     */
+    int count = 0;
+    for (uint64_t i=0; i<0xFFFFFFF; i++) {
+        if (__builtin_popcount(i)==3) count++;
+    }
+    std::cout << "count: " << count << "\n";
 }
