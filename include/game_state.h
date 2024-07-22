@@ -89,7 +89,8 @@ public:
 	int best_hand(bool p) const;
 	int pot_size() const;
 	int utility(int player) const;
-	int get_num_actions() const;
+	int num_actions() const;
+	void apply_action(int action);
 	
 	uint32_t suita;
 	uint32_t suitb;

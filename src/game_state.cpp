@@ -107,55 +107,12 @@ bool GameState::operator==(const GameState& other) const {
     return suita == other.suita && suitb == other.suitb && 
            suitc == other.suitc && suitd == other.suitd && player == other.player;
 }
-/**
-    * @param 'flop_history' 8-bit integer representing betting history on the flop:
-    *                       - Bit 0: Flag for flop appearance (0: not yet, 1: appeared)
-    *                       - Bits 1-2: Player 0's initial action
-    *                                -->  01: check
-    *                                -->  10: bet
-    *                                -->  11: fold (preflop)
-    *                       - Bits 3-4: Player 1's response
-    *                                -->  01: check/call
-    *                                -->  10: bet/raise
-    *                                -->  11: fold
-    *                       - Bits 5-6: Player 0's response to bet/raise
-    *                                -->  01: call
-    *                                -->  10: raise (check raise)
-    *                                -->  11: fold
-    *                       - Bit 7: Player 1's response to check raise
-    *                                -->   1: call
-    *                                -->   all 8 1's: fold
-    * @param 'turn_history' 8-bit integer representing betting history on the turn:
-    *                       - Bit 0: Flag for turn appearance (0: not yet, 1: appeared)
-    *                       - Bits 1-2: Player 0's action
-    *                                -->  01: check
-    *                                -->  10: bet
-    *                       - Bits 3-4: Player 1's response
-    *                                -->  01: check
-    *                                -->  10: call/bet
-    *                                -->  11: fold
-    *                       - Bits 5-7: Unused
-    * @param 'rivr_history' 8-bit integer representing betting history on the river:
-    *                       - Bit 0: Flag for river appearance (0: not yet, 1: appeared)
-    *                       - Bits 1-2: Player 0's initial action
-    *                                -->  01: check
-    *                                -->  10: bet
-    *                       - Bits 3-4: Player 1's response
-    *                                -->  01: check/call
-    *                                -->  10: bet/raise
-    *                                -->  11: fold
-    *                       - Bits 5-6: Player 0's response to raise
-    *                                -->  01: call
-    *                                -->  11: fold
-    *                       - Bit 7: Player 1's response to check raise
-    *                                -->   1: call
-    *                                -->   all 8 1's: fold
-    */
+
 bool GameState::is_terminal_node() const {
 
     uint8_t flop_action = flop_history >> 1;  // Ignore appearance flag
     uint8_t turn_action = turn_history >> 1;
-    uint8_t river_action = rivr_history >> 1;
+    uint8_t rivr_action = rivr_history >> 1;
 
     // Flop terminals
     if (flop_action == 0b11 ||          // fold preflop
@@ -171,15 +128,15 @@ bool GameState::is_terminal_node() const {
         return true;
 
     // River terminals
-    if (river_action == 0b101 ||        // check check
-        river_action == 0b110 ||        // bet call
-        river_action == 0b1110 ||       // bet fold
-        river_action == 0b111010 ||     // bet raise fold
-        river_action == 0b11010 ||      // bet raise call
-        river_action == 0b1111111 ||    // check bet raise fold (all 1's)
-        river_action == 0b1101001 ||    // check bet raise call
-        river_action == 0b11001 ||      // check bet call
-        river_action == 0b111001)       // check bet fold
+    if (rivr_action == 0b101 ||        // check check
+        rivr_action == 0b110 ||        // bet call
+        rivr_action == 0b1110 ||       // bet fold
+        rivr_action == 0b111010 ||     // bet raise fold
+        rivr_action == 0b11010 ||      // bet raise call
+        rivr_action == 0b1111111 ||    // check bet raise fold (all 1's)
+        rivr_action == 0b1101001 ||    // check bet raise call
+        rivr_action == 0b11001 ||      // check bet call
+        rivr_action == 0b111001)       // check bet fold
         return true;
 
     return false;
@@ -470,7 +427,7 @@ int GameState::pot_size() const {
 
     uint8_t flop_action = flop_history >> 1;  // Ignore appearance flag
     uint8_t turn_action = turn_history >> 1;
-    uint8_t river_action = rivr_history >> 1;
+    uint8_t rivr_action = rivr_history >> 1;
 
     int pot = 20;
 
@@ -484,10 +441,10 @@ int GameState::pot_size() const {
     if ((turn_action == 0b110) || (turn_action == 0b11001)) pot *= 3;
 
     //   river bet call             river check bet call
-    if ((river_action == 0b110) || (river_action == 0b11001)) pot *= 2;
+    if ((rivr_action == 0b110) || (rivr_action == 0b11001)) pot *= 2;
 
     //   river bet raise call          river check bet raise call
-    if ((river_action == 0b110100) || (river_action == 0b1101001)) pot = 800;
+    if ((rivr_action == 0b110100) || (rivr_action == 0b1101001)) pot = 800;
 
     return pot;
 }
@@ -497,7 +454,7 @@ int GameState::utility(int player) const {
 
     uint8_t flop_action = flop_history >> 1;  // Ignore appearance flag
     uint8_t turn_action = turn_history >> 1;
-    uint8_t river_action = rivr_history >> 1;
+    uint8_t rivr_action = rivr_history >> 1;
 
     //  fold preflop
     if (flop_action == 0b11) return (player == 0) ? -5 : 5; 
@@ -518,42 +475,72 @@ int GameState::utility(int player) const {
     if (turn_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
     
     //  check check
-    if (river_action == 0b101) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b101) return (player == 0) ? showdown() : -1 * showdown();
 
     //  bet call
-    if (river_action == 0b110) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b110) return (player == 0) ? showdown() : -1 * showdown();
 
     //  bet fold
-    if (river_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
+    if (rivr_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
 
     //  bet raise fold
-    if (river_action == 0b111010) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;;
+    if (rivr_action == 0b111010) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;;
 
     //  bet raise call
-    if (river_action == 0b11010) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b11010) return (player == 0) ? showdown() : -1 * showdown();
 
     //  check bet fold
-    if (river_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : showdown();
+    if (rivr_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : showdown();
 
     //  check bet call
-    if (river_action == 0b11001) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b11001) return (player == 0) ? showdown() : -1 * showdown();
 
     //  check bet raise fold
-    if (river_action == 0b1111111) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
+    if (rivr_action == 0b1111111) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
 
     //  check bet raise call
-    if (river_action == 0b1101001) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b1101001) return (player == 0) ? showdown() : -1 * showdown();
      
     throw std::invalid_argument("Terminal history not able to be evaluated for utility.");
     
     return -1;
 }
 
-int GameState::get_num_actions() const {
+int GameState::num_actions() const {
     
-    // fold/check, call/bet, raise
     // in response to check: [check, bet]
     // in response to bet: [fold, call, raise]
+    // in response to raise: [fold, call]
 
-    return 0;
+    /************************* Preflop *************************/
+    if (flop_history == 0) return 2;
+
+    /************************* Flop *************************/
+    if (flop_history == 0b1) return 2; // first flop action
+    if (flop_history == 0b11) return 2; // check
+    if (flop_history == 0b101) return 3; // bet
+    if (flop_history == 0b10101) return 2; // bet raise
+    if (flop_history == 0b10011) return 3; // check bet
+    if (flop_history == 0b1010011) return 2; // check bet raise
+
+    /************************* Turn *************************/
+    if (turn_history == 0b1) return 2; // first turn action
+    if (turn_history == 0b11) return 2; // check
+    if (turn_history == 0b101) // bet
+
+    /************************* River *************************/
+    if (rivr_history == 1) return 2; // first river action
+    if (rivr_history == 0b11) return 2; // check
+    if (rivr_history == 0b101) return 3; // bet
+    if (rivr_history == 0b10101) return 2; // bet raise
+    if (rivr_history == 0b10011) return 3; // check bet
+    if (rivr_history == 0b1010011) return 2; // check bet raise
+
+    throw std::invalid_argument("Tried to find number of actions for non-action node.");
+
+    return -1;
+}
+
+void GameState::apply_action(int action) {
+    
 }
