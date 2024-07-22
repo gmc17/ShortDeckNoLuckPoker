@@ -12,6 +12,7 @@ TEST(HandEvaluationTest, BasicEvaluation) {
     uint8_t  flop_history =                  0b00110010;
     uint8_t  turn_history =                  0b00110010;
     uint8_t  rivr_history =                  0b00001010;
+    bool call_preflop = 0;
     bool is_information_set = 0;
     bool player = 0;
 
@@ -24,6 +25,7 @@ TEST(HandEvaluationTest, BasicEvaluation) {
                  flop_history,
                  turn_history,
                  rivr_history,
+                 call_preflop,
                  is_information_set,
                  player);
 

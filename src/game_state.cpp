@@ -15,6 +15,7 @@ GameState::GameState(uint32_t suita,
                      uint8_t  flop_history, 
                      uint8_t  turn_history, 
                      uint8_t  rivr_history,
+                     bool call_preflop,
                      bool is_information_set,
                      bool player)
                      : 
@@ -27,6 +28,7 @@ GameState::GameState(uint32_t suita,
                      flop_history(flop_history),
                      turn_history(turn_history),
                      rivr_history(rivr_history),
+                     call_preflop(call_preflop),
                      is_information_set(is_information_set),
                      player(player)
 
@@ -137,6 +139,31 @@ bool GameState::is_terminal_node() const {
         rivr_action == 0b1101001 ||    // check bet raise call
         rivr_action == 0b11001 ||      // check bet call
         rivr_action == 0b111001)       // check bet fold
+        return true;
+
+    return false;
+}
+
+bool GameState::is_chance_node() const {
+
+    //  Preflop
+    if (call_preflop == 1 && 
+        flop_history == 0) 
+        return true;
+
+    //  Flop
+    if ((flop_history == 0b1011 ||        // check check
+         flop_history == 0b1101 ||        // bet call
+         flop_history == 0b110101 ||      // bet raise call
+         flop_history == 0b11010011 ||    // check bet raise call
+         flop_history == 0b110011) &&     // check bet call
+         turn_history % 2 == 0)           // ensure turn has not already happened       
+        return true;
+
+    //  Turn
+    if ((turn_history == 0b101 ||          // check check
+         turn_history == 0b110) &&         // bet call
+         rivr_history % 2 == 0)           // ensure river has not already happened  
         return true;
 
     return false;
@@ -526,7 +553,7 @@ int GameState::num_actions() const {
     /************************* Turn *************************/
     if (turn_history == 0b1) return 2; // first turn action
     if (turn_history == 0b11) return 2; // check
-    if (turn_history == 0b101) // bet
+    if (turn_history == 0b101) return 2; // bet
 
     /************************* River *************************/
     if (rivr_history == 1) return 2; // first river action
@@ -543,4 +570,184 @@ int GameState::num_actions() const {
 
 void GameState::apply_action(int action) {
     
+    /************************* Preflop *************************/
+
+    if (call_preflop == 0 && flop_history == 1) {
+        if (action == 0) {
+            flop_history = 0b11;  // fold
+            player = 1;
+        } else if (action == 1) {
+            flop_history = 0b101; // call
+            player = 0;
+            call_preflop = 1;
+        }
+    } 
+
+    /************************* Flop *************************/
+
+    if (flop_history == 1) {
+        if (action == 0) {
+            flop_history = 0b11;  // check
+            player = 1;
+        } else if (action == 1) {
+            flop_history = 0b101; // bet
+            player = 1;
+        }
+    }
+
+    if (flop_history == 0b11) {
+        if (action == 0) {
+            flop_history = 0b1011;  // check check
+            player = 0;
+        } else if (action == 1) {
+            flop_history = 0b10011; // check bet
+            player = 0;
+        }
+    }
+
+    if (flop_history == 0b101) {
+        if (action == 0) {
+            flop_history = 0b11101;  // bet fold
+            player = 0;
+        } else if (action == 1) {
+            flop_history = 0b1101; // bet call
+            player = 0;
+        } else if (action == 2) {
+            flop_history = 0b10101 // bet raise
+            player = 0
+        }
+    }
+
+    if (flop_history == 0b10101) {
+        if (action == 0) {
+            flop_history = 0b1110101;  // bet raise fold
+            player = 1;
+        } else if (action == 1) {
+            flop_history = 0b110101; // bet raise call
+            player = 0;
+        }
+    }
+
+    if (flop_history == 0b10011) {
+        if (action == 0) {
+            flop_history = 0b1110011;  // check bet fold
+            player = 1;
+        } else if (action == 1) {
+            flop_history = 0b110011; // check bet call
+            player = 0;
+        } else if (action == 2) {
+            flop_history = 0b1010011; // check bet raise
+            player = 1;
+        }
+    }
+
+    if (flop_history == 0b1010011) {
+        if (action == 0) {
+            flop_history = 0b11111111;  // check bet raise fold
+            player = 1;
+        } else if (action == 1) {
+            flop_history = 0b11010011; // check bet raise call
+            player = 0;
+        }
+    }
+    
+    // /************************* Turn *************************/
+
+    if (turn_history == 1) {
+        if (action == 0) {
+            turn_history = 0b11;  // check
+            player = 1;
+        } else if (action == 1) {
+            turn_history = 0b101; // bet
+            player = 1;
+        }
+    }
+
+    if (turn_history == 0b11) {
+        if (action == 0) {
+            turn_history = 0b1011;  // check check
+            player = 0;
+        } else if (action == 1) {
+            turn_history = 0b10011; // check bet
+            player = 0;
+        }
+    }
+
+    if (turn_history == 0b101) {
+        if (action == 0) {
+            turn_history = 0b11101;  // bet fold
+            player = 0;
+        } else if (action == 1) {
+            turn_history = 0b1101; // bet call
+            player = 0;
+        }
+    }
+
+    // /************************* River *************************/
+    
+    if (rivr_history == 1) {
+        if (action == 0) {
+            rivr_history = 0b11;  // check
+            player = 1;
+        } else if (action == 1) {
+            rivr_history = 0b101; // bet
+            player = 1;
+        }
+    }
+
+    if (rivr_history == 0b11) {
+        if (action == 0) {
+            rivr_history = 0b1011;  // check check
+            player = 0;
+        } else if (action == 1) {
+            rivr_history = 0b10011; // check bet
+            player = 0;
+        }
+    }
+
+    if (rivr_history == 0b101) {
+        if (action == 0) {
+            rivr_history = 0b11101;  // bet fold
+            player = 0;
+        } else if (action == 1) {
+            rivr_history = 0b1101; // bet call
+            player = 0;
+        } else if (action == 2) {
+            rivr_history = 0b10101 // bet raise
+            player = 0
+        }
+    }
+
+    if (rivr_history == 0b10101) {
+        if (action == 0) {
+            rivr_history = 0b1110101;  // bet raise fold
+            player = 1;
+        } else if (action == 1) {
+            rivr_history = 0b110101; // bet raise call
+            player = 0;
+        }
+    }
+
+    if (rivr_history == 0b10011) {
+        if (action == 0) {
+            rivr_history = 0b1110011;  // check bet fold
+            player = 1;
+        } else if (action == 1) {
+            rivr_history = 0b110011; // check bet call
+            player = 0;
+        } else if (action == 2) {
+            rivr_history = 0b1010011; // check bet raise
+            player = 1;
+        }
+    }
+
+    if (rivr_history == 0b1010011) {
+        if (action == 0) {
+            rivr_history = 0b11111111;  // check bet raise fold
+            player = 1;
+        } else if (action == 1) {
+            rivr_history = 0b11010011; // check bet raise call
+            player = 0;
+        }
+    }
 }

@@ -75,6 +75,7 @@ public:
               uint8_t  flop_history, 
               uint8_t  turn_history, 
               uint8_t  rivr_history,
+              bool call_preflop,
               bool is_information_set,
               bool player);
 
@@ -101,6 +102,7 @@ public:
 	uint16_t flop_history;
 	uint16_t turn_history;
 	uint16_t rivr_history;
+	bool call_preflop;
 	bool is_information_set;
 	bool player;
 };
@@ -110,7 +112,7 @@ namespace std {
     template <>
     struct hash<GameState> {
         uint32_t operator()(const GameState& gs) const {
-            uint32_t result = 17;  // Start with a prime number
+            uint32_t result = 17;
 
             // Combine all members into the hash
             result = result * 31 + hash<uint32_t>()(gs.suita);
@@ -122,6 +124,7 @@ namespace std {
             result = result * 31 + hash<uint16_t>()(gs.flop_history);
             result = result * 31 + hash<uint16_t>()(gs.turn_history);
             result = result * 31 + hash<uint16_t>()(gs.rivr_history);
+            result = result * 31 + hash<bool>()(gs.call_preflop);
             result = result * 31 + hash<bool>()(gs.is_information_set);
             result = result * 31 + hash<bool>()(gs.player);
 
