@@ -178,7 +178,8 @@ bool GameState::is_terminal_node() const {
         river_action == 0b11010 ||      // bet raise call
         river_action == 0b1111111 ||    // check bet raise fold (all 1's)
         river_action == 0b1101001 ||    // check bet raise call
-        river_action == 0b11001)        // check bet call
+        river_action == 0b11001 ||      // check bet call
+        river_action == 0b111001)       // check bet fold
         return true;
 
     return false;
@@ -215,7 +216,7 @@ int GameState::best_hand(bool p) const {
             ((suitb_all & straight_masks[i]) == straight_masks[i]) ||
             ((suitc_all & straight_masks[i]) == straight_masks[i]) || 
             ((suitd_all & straight_masks[i]) == straight_masks[i])) {
-            return 800000 + (6-i)*10000;
+            return 900000 + (6-i)*10000;
         }
     }
 
@@ -243,7 +244,7 @@ int GameState::best_hand(bool p) const {
         }
     }
 
-    if (kicker != -1 && best != -1) return 700000 + best*10000 + kicker*1000;
+    if (kicker != -1 && best != -1) return 800000 + best*10000 + kicker*1000;
 
     /************************* Full House *************************/
 
@@ -277,7 +278,7 @@ int GameState::best_hand(bool p) const {
         }
     }
 
-    if (pair != -1 && trips != -1) return 600000 + trips*10000 + pair*1000;
+    if (pair != -1 && trips != -1) return 700000 + trips*10000 + pair*1000;
 
     /************************* Flush *************************/
     
@@ -297,7 +298,7 @@ int GameState::best_hand(bool p) const {
         }
     }
 
-    if (best != -1) return 500000 + best*10000;
+    if (best != -1) return 600000 + best*10000;
 
     /************************* Straight *************************/
 
@@ -305,7 +306,7 @@ int GameState::best_hand(bool p) const {
 
     for (int i=0; i<6; i++) {
         if ((all_cards & straight_masks[i]) == straight_masks[i]) {
-            return 400000 + (6-i)*10000;
+            return 500000 + (6-i)*10000;
         }
     }
 
@@ -343,7 +344,7 @@ int GameState::best_hand(bool p) const {
     }
 
     if (kicker2 != -1 && kicker1 != -1 && trips != -1) {
-        return 300000 + trips*10000 + kicker1*1000 + kicker2*100;
+        return 400000 + trips*10000 + kicker1*1000 + kicker2*100;
     }
 
     /************************* Two Pair *************************/
@@ -381,7 +382,7 @@ int GameState::best_hand(bool p) const {
     }
 
     if (kicker != -1 && pair2 != -1 && pair1 != -1) {
-        return 200000 + pair1*10000 + pair2*1000 + kicker*100;
+        return 300000 + pair1*10000 + pair2*1000 + kicker*100;
     }
 
     /************************* Pair *************************/
@@ -421,7 +422,7 @@ int GameState::best_hand(bool p) const {
     }
 
     if (kicker3 != -1 && kicker2 != -1 && kicker1 != -1 && pair != -1) {
-        return 100000 + pair*10000 + kicker1*1000 + kicker2*100 + kicker3*10;
+        return 200000 + pair*10000 + kicker1*1000 + kicker2*100 + kicker3*10;
     }
 
     /************************* High Card *************************/
@@ -451,7 +452,7 @@ int GameState::best_hand(bool p) const {
     }
 
     if (kicker1 != -1 && kicker2 != -1 && kicker3 != -1 && kicker != -1 && pair != -1) {
-        return kicker1*10000 + kicker2*1000 + kicker3*100 + kicker*10 + pair;
+        return 100000 + kicker1*10000 + kicker2*1000 + kicker3*100 + kicker*10 + pair;
     }
 
     throw std::invalid_argument("Player has less than 5 cards; cannot calculate best hand.");
@@ -459,19 +460,10 @@ int GameState::best_hand(bool p) const {
     return -1;
 }
 
-bool GameState::showdown() const {
-    /**
-     * 0: high card
-     * 1: pair
-     * 2: two pair
-     * 3: three of a kind
-     * 4: straight
-     * 5: flush
-     * 6: full house
-     * 7: quads
-     * 8: straight flush
-     */
-    return 0;
+int GameState::showdown() const {
+    if (best_hand(0) == best_hand(1)) return 0;
+
+    return (best_hand(0) > best_hand(1)) ? pot_size()/2 : -1 * pot_size()/2;
 }
 
 int GameState::pot_size() const {
@@ -503,37 +495,65 @@ int GameState::pot_size() const {
 int GameState::utility(int player) const {
     if (!is_terminal_node()) throw std::invalid_argument("Non-terminal node passed to utility function.");
 
+    uint8_t flop_action = flop_history >> 1;  // Ignore appearance flag
+    uint8_t turn_action = turn_history >> 1;
+    uint8_t river_action = rivr_history >> 1;
+
     //  fold preflop
-    if (flop_history == 0b110) return (player == 0) ? -5 : 5; 
+    if (flop_action == 0b11) return (player == 0) ? -5 : 5; 
 
     //  bet fold
-    if (flop_history == 0b11100) return (player == 0) ? 10 : -10;
+    if (flop_action == 0b1110) return (player == 0) ? 10 : -10;
 
     //  bet raise fold
-    if (flop_history == 0b1110100) return (player == 0) ? -20 : 20;
+    if (flop_action == 0b111010) return (player == 0) ? -30 : 30;
+
+    //  check bet raise fold
+    if (flop_action == 0b1111111) return (player == 0) ? 30 : -30;
+
+    //  check bet fold
+    if (flop_action == 0b111001) return (player == 0) ? -10 : 10;
     
     //  bet fold
-    if (turn_history == 0b11100) return (player == 0) ? pot_size() : -1 * pot_size();
+    if (turn_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
     
     //  check check
-    if (rivr_history == 0b1010) return (player == 0) ? 0 : 0;
+    if (river_action == 0b101) return (player == 0) ? showdown() : -1 * showdown();
 
     //  bet call
-    if (rivr_history == 0b1100) return 0;
+    if (river_action == 0b110) return (player == 0) ? showdown() : -1 * showdown();
 
     //  bet fold
-    if (rivr_history == 0b11100) return 0;
+    if (river_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
 
     //  bet raise fold
-    if (rivr_history == 0b1110100) return 0;
+    if (river_action == 0b111010) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;;
 
     //  bet raise call
-    if (rivr_history == 0b110100) return 0;
+    if (river_action == 0b11010) return (player == 0) ? showdown() : -1 * showdown();
 
-    return 1;
+    //  check bet fold
+    if (river_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : showdown();
+
+    //  check bet call
+    if (river_action == 0b11001) return (player == 0) ? showdown() : -1 * showdown();
+
+    //  check bet raise fold
+    if (river_action == 0b1111111) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
+
+    //  check bet raise call
+    if (river_action == 0b1101001) return (player == 0) ? showdown() : -1 * showdown();
+     
+    throw std::invalid_argument("Terminal history not able to be evaluated for utility.");
+    
+    return -1;
 }
 
 int GameState::get_num_actions() const {
-    // Implementation here
+    
+    // fold/check, call/bet, raise
+    // in response to check: [check, bet]
+    // in response to bet: [fold, call, raise]
+
     return 0;
 }
