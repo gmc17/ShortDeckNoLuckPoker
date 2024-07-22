@@ -3,6 +3,8 @@
 #include <vector>
 #include <array>
 #include <stdexcept>
+#include <initializer_list>
+#include <iostream>
 
 GameState::GameState(uint32_t suita, 
                      uint32_t suitb, 
@@ -29,7 +31,7 @@ GameState::GameState(uint32_t suita,
                      player(player)
 
 {
-    if (suita < suitb || suitb < suitc || suitc < suitd) throw std::invalid_argument("Suits not in correct order.");
+    // if (suita < suitb || suitb < suitc || suitc < suitd) throw std::invalid_argument("Suits not in correct order.");
 }
 
 std::string GameState::to_string() const {
@@ -41,20 +43,35 @@ std::string GameState::to_string() const {
                                               "10", "J", "Q", "K",
                                               "A"};
     
-    // Hole cards
-    ss << "Hole cards: ";
+    // Small blind cards
+    ss << "SB cards: ";
 
     for (int i=0; i<4; i++) {
         std::vector<int> hole_cards;
-
-        if (player==1) for (int k=0; k<9; k++) suits[i] = suits[i] >> 1;
 
         for (int k=0; k<9; k++) {
             if (suits[i] % 2) hole_cards.push_back(k);
             suits[i] = suits[i] >> 1;
         }
 
-        if (player==0) for (int k=0; k<9; k++) suits[i] = suits[i] >> 1;
+        if (hole_cards.size() > 0) {
+            for (int j=0; j<hole_cards.size(); j++) {
+                ss << card_names[hole_cards[j]] << suit_names[i];
+            }
+        }
+    }
+    ss << "\n";
+
+    // Big blind cards
+    ss << "BB cards: ";
+
+    for (int i=0; i<4; i++) {
+        std::vector<int> hole_cards;
+
+        for (int k=0; k<9; k++) {
+            if (suits[i] % 2) hole_cards.push_back(k);
+            suits[i] = suits[i] >> 1;
+        }
 
         if (hole_cards.size() > 0) {
             for (int j=0; j<hole_cards.size(); j++) {
@@ -167,15 +184,15 @@ bool GameState::is_terminal_node() const {
     return false;
 }
 
-std::array<int, 6> flush_masks = {0b111110000, 0b011111000, 0b001111100, 0b000111110, 0b000011111, 0b100001111};
+// Ordered best-to-worst
+std::array<int, 6> straight_masks = {0b111110000, 0b011111000, 0b001111100, 0b000111110, 0b000011111, 0b100001111};
 std::array<int, 9> single_masks = {0b100000000, 0b010000000, 0b001000000, 0b000100000, 0b000010000, 0b000001000, 0b000000100, 0b000000010, 0b000000001};
 
-
 int GameState::best_hand(bool p) const {
-    uint8_t suita_player;
-    uint8_t suitb_player;
-    uint8_t suitc_player;
-    uint8_t suitd_player;
+    uint16_t suita_player;
+    uint16_t suitb_player;
+    uint16_t suitc_player;
+    uint16_t suitd_player;
 
     if (p==0) suita_player = suita & 0b111111111;
     else suita_player = (suita>>9) & 0b111111111;
@@ -186,28 +203,24 @@ int GameState::best_hand(bool p) const {
     if (p==0) suitd_player = suitd & 0b111111111;
     else suitd_player = (suitd>>9) & 0b111111111;
 
-    uint8_t suita_all = (suita>>18) | suita_player;
-    uint8_t suitb_all = (suitb>>18) | suitb_player;
-    uint8_t suitc_all = (suitc>>18) | suitc_player;
-    uint8_t suitd_all = (suitd>>18) | suitd_player;
+    uint16_t suita_all = (suita>>18) | suita_player;
+    uint16_t suitb_all = (suitb>>18) | suitb_player;
+    uint16_t suitc_all = (suitc>>18) | suitc_player;
+    uint16_t suitd_all = (suitd>>18) | suitd_player;
 
-    // STRAIGHT FLUSH
+    /************************* Straight flush *************************/
 
     for (int i=0; i<6; i++) {
-        if (((suita_all & flush_masks[i]) == flush_masks[i]) ||
-            ((suitb_all & flush_masks[i]) == flush_masks[i]) ||
-            ((suitc_all & flush_masks[i]) == flush_masks[i]) || 
-            ((suitd_all & flush_masks[i]) == flush_masks[i])) {
+        if (((suita_all & straight_masks[i]) == straight_masks[i]) ||
+            ((suitb_all & straight_masks[i]) == straight_masks[i]) ||
+            ((suitc_all & straight_masks[i]) == straight_masks[i]) || 
+            ((suitd_all & straight_masks[i]) == straight_masks[i])) {
             return 800000 + (6-i)*10000;
         }
     }
 
-    // QUADS
-
-    uint8_t tempa = suita_all;
-    uint8_t tempb = suitb_all;
-    uint8_t tempc = suitc_all;
-    uint8_t tempd = suitd_all;
+    /************************* Four of a kind *************************/
+    
     int best = -1;
     int kicker = -1;
 
@@ -217,21 +230,233 @@ int GameState::best_hand(bool p) const {
             (suitc_all & single_masks[i]) &&
             (suitd_all & single_masks[i])) {
             best = i;
-            for (int k=8; k>0; k--) {
+            for (int k=8; k>=0; k--) {
                 if ((k != i) && 
                     ((suita_all & single_masks[k]) || 
                      (suitb_all & single_masks[k]) ||
                      (suita_all & single_masks[k]) ||
                      (suita_all & single_masks[k]))) {
                     kicker = k;
+                    break;
                 }
             }
         }
     }
 
-    if (best != -1) return 700000 + best*10000 + kicker*1000;
+    if (kicker != -1 && best != -1) return 700000 + best*10000 + kicker*1000;
 
-    return 1;
+    /************************* Full House *************************/
+
+    int trips = -1;
+    int pair = -1;
+
+    // Find highest trips
+    for (int i=0; i<9; i++) {
+        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
+                    ((suitb_all & single_masks[i]) ? 1 : 0) +
+                    ((suitc_all & single_masks[i]) ? 1 : 0) +
+                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        if (count >= 3) {
+            trips = 9-i;
+            break;
+        }
+    }
+
+    // Find highest pair
+    if (trips != -1) {
+        for (int i=0; i<9; i++) {
+            if ((9-i) == trips) continue; // skip trips we already found
+            int count = ((suita_all & single_masks[i]) ? 1 : 0) +
+                        ((suitb_all & single_masks[i]) ? 1 : 0) +
+                        ((suitc_all & single_masks[i]) ? 1 : 0) +
+                        ((suitd_all & single_masks[i]) ? 1 : 0);
+            if (count >= 2) {
+                pair = 9-i;
+                break;
+            }
+        }
+    }
+
+    if (pair != -1 && trips != -1) return 600000 + trips*10000 + pair*1000;
+
+    /************************* Flush *************************/
+    
+    best = -1;
+
+    std::array<uint16_t, 4> suit_cards = {suita_all, suitb_all, suitc_all, suitd_all};
+
+    for (int i=0; i<4; i++) {
+        if (__builtin_popcount(suit_cards[i]) >= 5) {
+            // find highest card in the flush
+            for (int k=0; k<9; k++) {
+                if (suit_cards[i] & single_masks[k]) {
+                    best = 9-k;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (best != -1) return 500000 + best*10000;
+
+    /************************* Straight *************************/
+
+    uint8_t all_cards = suita_all | suitb_all | suitc_all | suitd_all;
+
+    for (int i=0; i<6; i++) {
+        if ((all_cards & straight_masks[i]) == straight_masks[i]) {
+            return 400000 + (6-i)*10000;
+        }
+    }
+
+    /************************* Three of a kind *************************/
+
+    trips = -1;
+    int kicker1 = -1;
+    int kicker2 = -1;
+
+    // Find highest trips
+    for (int i=0; i<9; i++) {
+        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
+                    ((suitb_all & single_masks[i]) ? 1 : 0) +
+                    ((suitc_all & single_masks[i]) ? 1 : 0) +
+                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        if (count >= 3) {
+            trips = 9-i;
+            break;
+        }
+    }
+
+    // Find highest kickers
+    if (trips != -1) {
+        for (int i=0; i<9; i++) {
+            if ((9-i) == trips) continue; // skip trips we already found
+            if (all_cards & single_masks[i]) {
+                if (kicker1 == -1) {
+                    kicker1 = 9-i;
+                } else if (kicker2 == -1) {
+                    kicker2 = 9-i;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (kicker2 != -1 && kicker1 != -1 && trips != -1) {
+        return 300000 + trips*10000 + kicker1*1000 + kicker2*100;
+    }
+
+    /************************* Two Pair *************************/
+
+    int pair1 = -1;
+    int pair2 = -1;
+    kicker = -1;
+
+    // Find highest pairs
+    for (int i=0; i<9; i++) {
+        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
+                    ((suitb_all & single_masks[i]) ? 1 : 0) +
+                    ((suitc_all & single_masks[i]) ? 1 : 0) +
+                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        if (count >= 2) {
+            if (pair1==-1) {
+                pair1 = 9-i;
+            } else if (pair2==-1) {
+                pair2 = 9-i;
+                break;
+            }
+        }
+    }    
+
+    // Find best kicker
+    if (pair1 != -1 && pair2 != -1) {
+        for (int i=0; i<9; i++) {
+            if (((9-i)!=pair1) && ((9-i)!=pair2)) {
+                if (all_cards & single_masks[i]) {
+                    kicker = 9-i;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (kicker != -1 && pair2 != -1 && pair1 != -1) {
+        return 200000 + pair1*10000 + pair2*1000 + kicker*100;
+    }
+
+    /************************* Pair *************************/
+
+    pair = -1;
+    kicker1 = -1;
+    kicker2 = -1;
+    int kicker3 = -1;
+
+    // Find highest pair
+    for (int i=0; i<9; i++) {
+        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
+                    ((suitb_all & single_masks[i]) ? 1 : 0) +
+                    ((suitc_all & single_masks[i]) ? 1 : 0) +
+                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        if (count >= 2) {
+            pair = 9-i;
+            break;
+        }
+    }    
+
+    // Find best kickers
+    if (pair != -1) {
+        for (int i=0; i<9; i++) {
+            if ((9-i) == pair) continue;
+            if (all_cards & single_masks[i]) {
+                if (kicker1 == -1) {
+                    kicker1 = 9-i;
+                } else if (kicker2 == -1) {
+                    kicker2 = 9-i;
+                } else if (kicker3 == -1) {
+                    kicker3 = 9-i;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (kicker3 != -1 && kicker2 != -1 && kicker1 != -1 && pair != -1) {
+        return 100000 + pair*10000 + kicker1*1000 + kicker2*100 + kicker3*10;
+    }
+
+    /************************* High Card *************************/
+
+    kicker1 = -1;
+    kicker2 = -1;
+    kicker3 = -1;
+    kicker = -1;
+    pair = -1;
+
+    // Find best kickers
+    for (int i=0; i<9; i++) {
+        if (all_cards & single_masks[i]) {
+            if (kicker1 == -1) {
+                kicker1 = 9-i;
+            } else if (kicker2 == -1) {
+                kicker2 = 9-i;
+            } else if (kicker3 == -1) {
+                kicker3 = 9-i;
+            } else if (kicker == -1) {
+                kicker = 9-i;
+            } else if (pair == -1) {
+                pair = 9-i;
+                break;
+            }
+        }
+    }
+
+    if (kicker1 != -1 && kicker2 != -1 && kicker3 != -1 && kicker != -1 && pair != -1) {
+        return kicker1*10000 + kicker2*1000 + kicker3*100 + kicker*10 + pair;
+    }
+
+    throw std::invalid_argument("Player has less than 5 cards; cannot calculate best hand.");
+
+    return -1;
 }
 
 bool GameState::showdown() const {
