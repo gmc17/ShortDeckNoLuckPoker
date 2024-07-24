@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <functional>
+#include <iostream>
 
 class GameState {
 
@@ -62,7 +63,6 @@ public:
 	* 						- Bit 7: Player 1's response to check raise
 	* 								 -->   1: call
 	* 								 -->   all 8 1's: fold
-	* @param 'is_information_set' Boolean indicating whether the game state is an information set (0: false -- it is a history, 1: true -- it is an information set)
 	* @param 'player' Boolean indicating the active player (false for small blind, true for big blind)
 	*/
 
@@ -76,7 +76,6 @@ public:
               uint8_t  turn_history, 
               uint8_t  rivr_history,
               bool call_preflop,
-              bool is_information_set,
               bool player);
 
 	// Utility methods
@@ -84,8 +83,8 @@ public:
 	bool operator==(const GameState& other) const;
 
 	// CFR methods
-	bool is_terminal_node() const;
-	bool is_chance_node() const;
+	bool is_terminal() const;
+	bool is_chance() const;
 	int showdown() const;
 	int best_hand(bool p) const;
 	int pot_size() const;
@@ -93,7 +92,8 @@ public:
 	int num_actions() const;
 	int num_chance_actions() const;
 	void apply_action(int action);
-	void apply_chance_action(int action);
+	void apply_chance_action(int actions);
+	void to_information_set();
 	
 	uint32_t suita;
 	uint32_t suitb;
@@ -101,36 +101,13 @@ public:
 	uint32_t suitd;
 	uint8_t  turn;
 	uint8_t  rivr;
-	uint16_t flop_history;
-	uint16_t turn_history;
-	uint16_t rivr_history;
+	uint8_t flop_history;
+	uint8_t turn_history;
+	uint8_t rivr_history;
 	bool call_preflop;
-	bool is_information_set;
 	bool player;
 };
 
-
-namespace std {
-    template <>
-    struct hash<GameState> {
-        uint32_t operator()(const GameState& gs) const {
-            uint32_t result = 17;
-
-            // Combine all members into the hash
-            result = result * 31 + hash<uint32_t>()(gs.suita);
-            result = result * 31 + hash<uint32_t>()(gs.suitb);
-            result = result * 31 + hash<uint32_t>()(gs.suitc);
-            result = result * 31 + hash<uint32_t>()(gs.suitd);
-            result = result * 31 + hash<uint8_t>()(gs.turn);
-            result = result * 31 + hash<uint8_t>()(gs.rivr);
-            result = result * 31 + hash<uint16_t>()(gs.flop_history);
-            result = result * 31 + hash<uint16_t>()(gs.turn_history);
-            result = result * 31 + hash<uint16_t>()(gs.rivr_history);
-            result = result * 31 + hash<bool>()(gs.call_preflop);
-            result = result * 31 + hash<bool>()(gs.is_information_set);
-            result = result * 31 + hash<bool>()(gs.player);
-
-            return result;
-        }
-    };
-}
+void swap(int* xp, int* yp);
+GameState generate_random_initial_state();
+size_t hash_gamestate(const GameState& gs);

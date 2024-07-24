@@ -13,7 +13,6 @@ TEST(HandEvaluationTest, PotSizeTest01) {
     uint8_t  turn_history =                  0b00110010;
     uint8_t  rivr_history =                  0b00001010;
     bool call_preflop = 0;
-    bool is_information_set = 0;
     bool player = 0;
 
     GameState gs(suita,
@@ -26,7 +25,6 @@ TEST(HandEvaluationTest, PotSizeTest01) {
                  turn_history,
                  rivr_history,
                  call_preflop,
-                 is_information_set,
                  player);
 
     int result = gs.utility(0);
@@ -44,7 +42,6 @@ TEST(HandEvaluationTest, PotSizeTest02) {
     uint8_t  turn_history =                  0b00110010;
     uint8_t  rivr_history =                  0b00001010;
     bool call_preflop = 0;
-    bool is_information_set = 0;
     bool player = 0;
 
     GameState gs(suita,
@@ -57,7 +54,6 @@ TEST(HandEvaluationTest, PotSizeTest02) {
                  turn_history,
                  rivr_history,
                  call_preflop,
-                 is_information_set,
                  player);
 
     int result = gs.utility(0);

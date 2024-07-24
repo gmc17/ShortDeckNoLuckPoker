@@ -3,19 +3,19 @@
 #include "game_state.h"
 #include <array>
 #include "cfr.h"
+#include <unordered_map>
 
 int main() {
-	uint32_t suita = 0b00000000101000000000000000000110;
+	uint32_t suita = 0b00000000000000000000000000000110;
     uint32_t suitb = 0b00000000000000000000000000000000;
-    uint32_t suitc = 0b00000000010000001001000000000000;
+    uint32_t suitc = 0b00000000000000001001000000000000;
     uint32_t suitd = 0b00000000000000000000000000000000;
-    uint8_t  turn  = 						 0b00100000;
-	uint8_t  rivr  = 						 0b00100001;
-    uint8_t  flop_history = 			     0b00110011;
-    uint8_t  turn_history = 				 0b00110011;
-    uint8_t  rivr_history = 			     0b00010011;
-    bool call_preflop = 0;
-    bool is_information_set = 0;
+    uint8_t  turn  = 						 0b00000000;
+	uint8_t  rivr  = 						 0b00000000;
+    uint8_t  flop_history = 			     0b00000000;
+    uint8_t  turn_history = 				 0b00000000;
+    uint8_t  rivr_history = 			     0b00000000;
+    bool call_preflop = 1;
     bool player = 0;
 
     GameState gs(suita,
@@ -28,18 +28,33 @@ int main() {
 				 turn_history,
 				 rivr_history,
 				 call_preflop,
-				 is_information_set,
 				 player);
 
-    std::cout << gs.to_string();
+    GameState random = generate_random_initial_state();
 
-    std::cout << "SB best hand value: " << gs.best_hand(0) << "\n";
-    std::cout << "BB best hand value: " << gs.best_hand(1) << "\n";
+    // random.call_preflop = true;
+    // random.apply_chance_action();
+    // random.apply_chance_action();
+    // random.apply_chance_action();
 
-    // std::cout << "Utility to SB: " << gs.utility(0) << "\n";
-    // std::cout << "Utility to BB: " << gs.utility(1) << "\n";
+    // random.flop_history = 0b1011;
+    // random.apply_chance_action();
 
-    std::cout << "Get_strategy(): " << get_strategy(gs) << "\n";
+    // std::cout << random.to_string();
 
-    gs.apply_chance_action(1);
+    mccfr(500);
+
+    // std::unordered_map<GameState, std::array<float, 3>, GameStateHash> strategy_map;
+
+	// std::array<float, 3> strategy = {0.5f, 0.3f, 0.2f};
+
+	// // Insert into the unordered_map
+	// strategy_map[gs] = strategy;
+
+	// // Retrieve from the unordered_map
+	// auto it = strategy_map.find(gs);
+	// if (it != strategy_map.end()) {
+	//     std::array<float, 3> retrieved_strategy = it->second;
+	//     std::cout << "hash: " << it->first.to_string() << "\n";
+	// }
 }
