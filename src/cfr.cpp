@@ -8,7 +8,7 @@
 #include <sstream>
 #include <fstream>
 
-const size_t ARRAY_SIZE = 10000007;
+const size_t ARRAY_SIZE = 40000007;
 std::array<std::array<float, 3>, ARRAY_SIZE> regret_sum;
 std::array<std::array<float, 3>, ARRAY_SIZE> strategy_sum;
 

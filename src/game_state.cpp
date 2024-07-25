@@ -1049,5 +1049,5 @@ size_t hash_gamestate(const GameState& gs) {
     seed ^= hash_bool(gs.call_preflop) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     seed ^= hash_bool(gs.player) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
-    return seed % 10000007;
+    return seed % 40000007;
 }
