@@ -8,10 +8,7 @@
 #include <bitset>
 #include <random>
 #include <cstdint>
-
-std::random_device rd;
-std::mt19937 gen(rd());
-std::uniform_int_distribution<> dis(0, 35);
+#include <sstream>
 
 GameState::GameState(uint32_t suita, 
                      uint32_t suitb, 
@@ -39,6 +36,11 @@ GameState::GameState(uint32_t suita,
 
 {
     // if (suita < suitb || suitb < suitc || suitc < suitd) throw std::invalid_argument("Suits not in correct order.");
+}
+
+void printBinary(uint8_t value) {
+    std::bitset<8> binary(value);
+    std::cout << binary << std::endl;
 }
 
 std::string GameState::to_string() const {
@@ -128,6 +130,14 @@ std::string GameState::to_string() const {
     }
 
     ss << "\n";
+
+    std::bitset<8> binary_flop_history(flop_history);
+    std::bitset<8> binary_turn_history(turn_history);
+    std::bitset<8> binary_rivr_history(rivr_history);
+
+    ss << "Flop history: " << binary_flop_history << "\n";
+    ss << "Turn history: " << binary_turn_history << "\n";
+    ss << "Rivr history: " << binary_rivr_history << "\n";
     
     return ss.str();
 }
@@ -187,7 +197,7 @@ bool GameState::is_chance() const {
         return true;
 
     //  Flop
-    if ((turn_history % 2 == 0) &&          // ensure turn has not already happened       
+    if (((turn_history % 2) == 0) &&          // ensure turn has not already happened       
        ((flop_history == 0b1011) ||        // check check
         (flop_history == 0b1101) ||        // bet call
         (flop_history == 0b110101) ||      // bet raise call
@@ -196,7 +206,7 @@ bool GameState::is_chance() const {
         return true;
 
     //  Turn
-    if ((rivr_history % 2 == 0) &&         // ensure river has not already happened
+    if (((rivr_history % 2) == 0) &&         // ensure river has not already happened
        ((turn_history == 0b1011) ||        // check check
         (turn_history == 0b1101) ||        // bet call
         (turn_history == 0b110011)))      // check bet call  
@@ -560,7 +570,7 @@ int GameState::utility(int player) const {
     if (turn_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
 
     //  check bet fold
-    if (turn_action == 0b111001) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
+    if (turn_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;
     
     //  check check
     if (rivr_action == 0b101) return (player == 0) ? showdown() : -1 * showdown();
@@ -578,7 +588,7 @@ int GameState::utility(int player) const {
     if (rivr_action == 0b11010) return (player == 0) ? showdown() : -1 * showdown();
 
     //  check bet fold
-    if (rivr_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : showdown();
+    if (rivr_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;
 
     //  check bet call
     if (rivr_action == 0b11001) return (player == 0) ? showdown() : -1 * showdown();
@@ -612,6 +622,7 @@ int GameState::num_actions() const {
     if (turn_history == 0b1) return 2; // first turn action
     if (turn_history == 0b11) return 2; // check
     if (turn_history == 0b101) return 2; // bet
+    if (turn_history == 0b10011) return 2; // check bet
 
     /************************* River *************************/
     if (rivr_history == 0b1) return 2; // first river action
@@ -621,31 +632,38 @@ int GameState::num_actions() const {
     if (rivr_history == 0b10011) return 3; // check bet
     if (rivr_history == 0b1010011) return 2; // check bet raise
 
-    // throw std::invalid_argument("Tried to find number of actions for non-action node.");
+    std::ostringstream oss;
+        oss << "Tried to find number of actions for non-action node. "
+            << "flop_history: " << static_cast<int>(flop_history)
+            << ", turn_history: " << static_cast<int>(turn_history)
+            << ", rivr_history: " << static_cast<int>(rivr_history);
 
+    throw std::invalid_argument(oss.str());
+    
     return -1;
 }
 
 int GameState::num_chance_actions() const {
     //  Preflop
     if ((call_preflop == 1) && 
-        (flop_history == 0)) 
+        (flop_history == 0)) {
         return 36 - (__builtin_popcount(suita) + __builtin_popcount(suitb) + __builtin_popcount(suitc) + __builtin_popcount(suitd));
-
+    }
     //  Flop
-    if ((turn_history % 2 == 0) &&          // ensure turn has not already happened       
-       ((flop_history == 0b1011) ||        // check check
-        (flop_history == 0b1101) ||        // bet call
-        (flop_history == 0b110101) ||      // bet raise call
-        (flop_history == 0b11010011) ||    // check bet raise call
-        (flop_history == 0b110011)))        // check bet call
+    if (((turn_history % 2) == 0) &&          // ensure turn has not already happened       
+        ((flop_history == 0b1011) ||        // check check
+         (flop_history == 0b1101) ||        // bet call
+         (flop_history == 0b110101) ||      // bet raise call
+         (flop_history == 0b11010011) ||    // check bet raise call
+         (flop_history == 0b110011)))  {      // check bet call
         return 29;
+    }
 
     //  Turn
-    if ((rivr_history % 2 == 0) &&         // ensure river has not already happened
-       ((turn_history == 0b1011) ||        // check check
-        (turn_history == 0b1101) ||        // bet call
-        (turn_history == 0b110011)))      // check bet call             
+    if (((rivr_history % 2) == 0) &&         // ensure river has not already happened
+        ((turn_history == 0b1011) ||        // check check
+         (turn_history == 0b1101) ||        // bet call
+         (turn_history == 0b110011)))      // check bet call             
         return 28;
 
     return 0;
@@ -655,12 +673,13 @@ void GameState::apply_action(int action) {
     
     /************************* Preflop *************************/
 
-    if (call_preflop == 0 && flop_history == 0) {
+    if ((call_preflop == 0) && (flop_history == 0)) {
         if (action == 0) {
-            flop_history = 0b11;  // fold
+            flop_history = 0b111;  // fold
             return;
         } else if (action == 1) {
             call_preflop = 1; // call
+            flop_history = 0;
             player = 0;
             return;
         }
@@ -786,7 +805,7 @@ void GameState::apply_action(int action) {
             turn_history = 0b1110011;  // check bet fold
             return;
         } else if (action == 1) {
-            turn_history = 0b1010011; // check bet call
+            turn_history = 0b110011; // check bet call
             player = 0;
             return;
         }
@@ -893,6 +912,10 @@ void GameState::apply_chance_action(int actions) {
     int k;
     bool acted = false;
 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 35);
+
     while (acted == false) {
         k = dis(gen);
         if (!((suit_cards[k/9] & single_masks[k%9])==single_masks[k%9])) {
@@ -976,6 +999,10 @@ GameState generate_random_initial_state() {
     bool call_preflop = false;
     bool player = false;
 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 35);
+
     // Generate unique card indices
     std::array<int, 4> card_indices;
     for (int i=0; i<4; ++i) {
@@ -984,12 +1011,15 @@ GameState generate_random_initial_state() {
         } while (std::find(card_indices.begin(), card_indices.begin() + i, card_indices[i]) != card_indices.begin() + i);
     }
 
+    // std::cout << card_indices[0] << " " << card_indices[1] << "\n";
+
     // Assign cards to players
     for (int i=0; i<2; ++i) {
         int suit = card_indices[i] / 9;
         int rank = card_indices[i] % 9;
         suit_cards[suit] |= (1U << rank);
     }
+
     for (int i=2; i<4; ++i) {
         int suit = card_indices[i] / 9;
         int rank = card_indices[i] % 9;
@@ -1019,5 +1049,5 @@ size_t hash_gamestate(const GameState& gs) {
     seed ^= hash_bool(gs.call_preflop) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     seed ^= hash_bool(gs.player) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
-    return seed % 1000000;
+    return seed % 10000007;
 }

@@ -111,3 +111,4 @@ public:
 void swap(int* xp, int* yp);
 GameState generate_random_initial_state();
 size_t hash_gamestate(const GameState& gs);
+void printBinary(uint8_t value);

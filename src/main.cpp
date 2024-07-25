@@ -30,7 +30,7 @@ int main() {
 				 call_preflop,
 				 player);
 
-    GameState random = generate_random_initial_state();
+    // GameState random = generate_random_initial_state();
 
     // random.call_preflop = true;
     // random.apply_chance_action();
@@ -40,9 +40,11 @@ int main() {
     // random.flop_history = 0b1011;
     // random.apply_chance_action();
 
-    // std::cout << random.to_string();
+    //std::cout << random.to_string();
 
-    mccfr(500);
+    //mccfr(100000);
+
+    print_nonzero_strategy(1000);
 
     // std::unordered_map<GameState, std::array<float, 3>, GameStateHash> strategy_map;
 
