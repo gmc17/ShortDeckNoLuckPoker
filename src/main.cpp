@@ -1,9 +1,11 @@
-//g++ -O3 main.cpp -o name && ./name
 #include <iostream>
-#include "game_state.h"
 #include <array>
-#include "cfr.h"
 #include <unordered_map>
+
+#include "game_state.h"
+#include "ars_table.h"
+#include "cfr.h"
+#include "constants.h"
 
 int main() {
 	uint32_t suita = 0b00000000000000000000000000000110;
@@ -30,21 +32,101 @@ int main() {
 				 call_preflop,
 				 player);
 
-    // GameState random = generate_random_initial_state();
 
-    // random.call_preflop = true;
-    // random.apply_chance_action();
-    // random.apply_chance_action();
-    // random.apply_chance_action();
+    // const int NUM_SAMPLES = 5000;
+    // float total = 0.0f;
+    // for (int i=0; i<NUM_SAMPLES; i++) {
+    // 	GameState random = generate_random_initial_state();
+	//     random.apply_chance_action(32);
+	//     random.apply_chance_action(31);
+	//     random.apply_chance_action(30);
+	//     random.apply_action(0);
+	//     random.apply_action(0);
+	//     random.apply_chance_action(29);
+	//     random.apply_action(0);
+	//     random.apply_action(0);
+	//     random.apply_chance_action(28);
+	//     total += random.rivr_hand_strength();
 
-    // random.flop_history = 0b1011;
-    // random.apply_chance_action();
 
-    //std::cout << random.to_string();
+	//     //std::cout << random.to_string();
+	//     //std::cout << random.rivr_hand_strength() << "\n\n";
+    // }
+
+    // for (int i=0; i<10; i++) {
+    // 	GameState random = generate_random_initial_state();
+	//     std::cout << random.to_string();
+	//     std::cout << "sb p_id: " << random.p_id(0) << "\n";
+	//     std::cout << "bb p_id: " << random.p_id(1) << "\n\n";
+
+	//     //std::cout << random.to_string();
+	//     //std::cout << random.rivr_hand_strength() << "\n\n";
+    // }
+
+    ars_table.load_from_file("ars_table_final.dat");
+
+    std::cout << ars_table(0, 2987, 81) << "\n";
+
+    // for (int r=0; r<9900; r++) {
+    // 	for (int p_id=0; p_id<81; p_id++) {
+    // 		ars_table(0, r, p_id) = 0.0f;
+    // 		count_table(0, r, p_id) = 0.0f;
+    // 	}
+    // }
+
+    // ars_table.save_to_file("ars_table.dat");
+    // count_table.save_to_file("count_table.dat");
+
+    // generate_ARS_tables();
+
+    // ars_table.load_from_file("ars_table.dat");
+    // count_table.load_from_file("count_table.dat");
+
+    // for (int r=0; r<9900; r++) {
+    // 	for (int p_id=0; p_id<81; p_id++) {
+    // 		if (count_table(0, r, p_id) > 0.5f) {
+    // 			float hand_strength = ars_table(0, r, p_id) / count_table(0, r, p_id);
+    // 			ars_table(0, r, p_id) = hand_strength;
+    // 		}
+    // 	}
+    // }
+
+	// ars_table.save_to_file("ars_table.dat");
+    // count_table.save_to_file("count_table.dat");
+
+    
+	// for (int r=0; r<50; r++) {
+	//     for (int p1=0; p1<36; p1++) {
+	//     	for (int p2=p1+1; p2<36; p2++) {
+	//     		std::array<uint16_t, 4> suits = {0, 0, 0, 0};
+
+	//     		suits[p1/9] |= ((0b1)<<(p1%9));
+	//     		suits[p2/9] |= ((0b1)<<(p2%9));
+
+	//     		GameState gs(suits[0],
+	// 		    			 suits[1],
+	// 						 suits[2],
+	// 						 suits[3],
+	// 						 0, 0, 0, 0, 0, 0, 0);
+
+	// 		    gs.apply_chance_action(32);
+	// 		    gs.apply_chance_action(31);
+	// 		    gs.apply_chance_action(30);
+
+	// 		    int p_id = pocket_id(p1,p2);
+	// 		    int rank = gs.best_hand(0)/100;
+
+	// 	    	std::cout << gs.to_string();
+    // 			std::cout << "(" << rank << ", " << CARD_NAMES[p1%9] << SUIT_NAMES[p1/9] << CARD_NAMES[p2%9] << SUIT_NAMES[p2/9] << ", p_id: " << p_id << "): " << ars_table(0, rank, p_id) << "\n\n";
+	// 		}
+	//     } 
+	// }
 
     //mccfr(100000);
 
-    print_nonzero_strategy(1000);
+    // as_mccfr(120000);
+
+    // print_nonzero_strategy(100, "as_latest_checkpoint.dat");
 
     // std::unordered_map<GameState, std::array<float, 3>, GameStateHash> strategy_map;
 
@@ -60,3 +142,12 @@ int main() {
 	//     std::cout << "hash: " << it->first.to_string() << "\n";
 	// }
 }
+
+
+
+	/**
+	 * AA
+	 * 
+	 * 
+	 * 
+	 */ 

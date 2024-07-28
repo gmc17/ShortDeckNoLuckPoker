@@ -1,14 +1,7 @@
 #include "game_state.h"
-#include <sstream>
-#include <vector>
-#include <array>
-#include <stdexcept>
-#include <initializer_list>
-#include <iostream>
-#include <bitset>
-#include <random>
-#include <cstdint>
-#include <sstream>
+#include "ars_table.h"
+#include "constants.h"
+#include "info_set.h"
 
 GameState::GameState(uint32_t suita, 
                      uint32_t suitb, 
@@ -32,25 +25,15 @@ GameState::GameState(uint32_t suita,
                      turn_history(turn_history),
                      rivr_history(rivr_history),
                      call_preflop(call_preflop),
-                     player(player)
+                     player(player) {}
 
-{
-    // if (suita < suitb || suitb < suitc || suitc < suitd) throw std::invalid_argument("Suits not in correct order.");
-}
-
-void printBinary(uint8_t value) {
-    std::bitset<8> binary(value);
-    std::cout << binary << std::endl;
-}
+ARSTable ars_table;
 
 std::string GameState::to_string() const {
     std::stringstream ss;
 
     std::array<uint32_t, 4> suits = {suita, suitb, suitc, suitd};
-    std::array<std::string,  4> suit_names = {"s", "h", "d", "c"};
-    std::array<std::string, 13> card_names = {"6", "7", "8", "9",
-                                              "10", "J", "Q", "K",
-                                              "A"};
+    
     
     // Small blind cards
     ss << "SB cards:   ";
@@ -65,7 +48,7 @@ std::string GameState::to_string() const {
 
         if (hole_cards.size() > 0) {
             for (int j=0; j<hole_cards.size(); j++) {
-                ss << card_names[hole_cards[j]] << suit_names[i];
+                ss << CARD_NAMES[hole_cards[j]] << SUIT_NAMES[i];
             }
         }
     }
@@ -84,7 +67,7 @@ std::string GameState::to_string() const {
 
         if (hole_cards.size() > 0) {
             for (int j=0; j<hole_cards.size(); j++) {
-                ss << card_names[hole_cards[j]] << suit_names[i];
+                ss << CARD_NAMES[hole_cards[j]] << SUIT_NAMES[i];
             }
         }
     }
@@ -103,7 +86,7 @@ std::string GameState::to_string() const {
 
         if (comm_cards.size() > 0) {
             for (int j=0; j<comm_cards.size(); j++) {
-                ss << card_names[comm_cards[j]] << suit_names[i];
+                ss << CARD_NAMES[comm_cards[j]] << SUIT_NAMES[i];
             }
         }
     }
@@ -115,7 +98,7 @@ std::string GameState::to_string() const {
         int turn_rank = turn & 0b1111;
         int turn_suit = (turn>>4) & 0b11;
 
-        ss << card_names[turn_rank] << suit_names[turn_suit];
+        ss << CARD_NAMES[turn_rank] << SUIT_NAMES[turn_suit];
     }
 
     ss << "\n";
@@ -126,7 +109,7 @@ std::string GameState::to_string() const {
         int rivr_rank = rivr & 0b1111;
         int rivr_suit = (rivr>>4) & 0b11;
 
-        ss << card_names[rivr_rank] << suit_names[rivr_suit];
+        ss << CARD_NAMES[rivr_rank] << SUIT_NAMES[rivr_suit];
     }
 
     ss << "\n";
@@ -215,10 +198,6 @@ bool GameState::is_chance() const {
     return false;
 }
 
-// Ordered best-to-worst
-std::array<int, 6> straight_masks = {0b111110000, 0b011111000, 0b001111100, 0b000111110, 0b000011111, 0b100001111};
-std::array<int, 9> single_masks = {0b100000000, 0b010000000, 0b001000000, 0b000100000, 0b000010000, 0b000001000, 0b000000100, 0b000000010, 0b000000001};
-
 int GameState::best_hand(bool p) const {
     uint16_t suita_player;
     uint16_t suitb_player;
@@ -262,10 +241,10 @@ int GameState::best_hand(bool p) const {
     /************************* Straight flush *************************/
 
     for (int i=0; i<6; i++) {
-        if (((suita_all & straight_masks[i]) == straight_masks[i]) ||
-            ((suitb_all & straight_masks[i]) == straight_masks[i]) ||
-            ((suitc_all & straight_masks[i]) == straight_masks[i]) || 
-            ((suitd_all & straight_masks[i]) == straight_masks[i])) {
+        if (((suita_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) ||
+            ((suitb_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) ||
+            ((suitc_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) || 
+            ((suitd_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i])) {
             return 900000 + (6-i)*10000;
         }
     }
@@ -276,17 +255,17 @@ int GameState::best_hand(bool p) const {
     int kicker = -1;
 
     for (int i=0; i<9; i++) {
-        if ((suita_all & single_masks[i]) && 
-            (suitb_all & single_masks[i]) &&
-            (suitc_all & single_masks[i]) &&
-            (suitd_all & single_masks[i])) {
+        if ((suita_all & SINGLE_MASKS[i]) && 
+            (suitb_all & SINGLE_MASKS[i]) &&
+            (suitc_all & SINGLE_MASKS[i]) &&
+            (suitd_all & SINGLE_MASKS[i])) {
             best = i;
             for (int k=8; k>=0; k--) {
                 if ((k != i) && 
-                    ((suita_all & single_masks[k]) || 
-                     (suitb_all & single_masks[k]) ||
-                     (suita_all & single_masks[k]) ||
-                     (suita_all & single_masks[k]))) {
+                    ((suita_all & SINGLE_MASKS[k]) || 
+                     (suitb_all & SINGLE_MASKS[k]) ||
+                     (suitc_all & SINGLE_MASKS[k]) ||
+                     (suitd_all & SINGLE_MASKS[k]))) {
                     kicker = k;
                     break;
                 }
@@ -303,10 +282,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest trips
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
-                    ((suitb_all & single_masks[i]) ? 1 : 0) +
-                    ((suitc_all & single_masks[i]) ? 1 : 0) +
-                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 3) {
             trips = 9-i;
             break;
@@ -317,10 +296,10 @@ int GameState::best_hand(bool p) const {
     if (trips != -1) {
         for (int i=0; i<9; i++) {
             if ((9-i) == trips) continue; // skip trips we already found
-            int count = ((suita_all & single_masks[i]) ? 1 : 0) +
-                        ((suitb_all & single_masks[i]) ? 1 : 0) +
-                        ((suitc_all & single_masks[i]) ? 1 : 0) +
-                        ((suitd_all & single_masks[i]) ? 1 : 0);
+            int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                        ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                        ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                        ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
             if (count >= 2) {
                 pair = 9-i;
                 break;
@@ -340,7 +319,7 @@ int GameState::best_hand(bool p) const {
         if (__builtin_popcount(suit_cards[i]) >= 5) {
             // find highest card in the flush
             for (int k=0; k<9; k++) {
-                if (suit_cards[i] & single_masks[k]) {
+                if (suit_cards[i] & SINGLE_MASKS[k]) {
                     best = 9-k;
                     break;
                 }
@@ -352,10 +331,10 @@ int GameState::best_hand(bool p) const {
 
     /************************* Straight *************************/
 
-    uint8_t all_cards = suita_all | suitb_all | suitc_all | suitd_all;
+    uint16_t all_cards = suita_all | suitb_all | suitc_all | suitd_all;
 
     for (int i=0; i<6; i++) {
-        if ((all_cards & straight_masks[i]) == straight_masks[i]) {
+        if ((all_cards & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) {
             return 500000 + (6-i)*10000;
         }
     }
@@ -368,10 +347,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest trips
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
-                    ((suitb_all & single_masks[i]) ? 1 : 0) +
-                    ((suitc_all & single_masks[i]) ? 1 : 0) +
-                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 3) {
             trips = 9-i;
             break;
@@ -382,7 +361,7 @@ int GameState::best_hand(bool p) const {
     if (trips != -1) {
         for (int i=0; i<9; i++) {
             if ((9-i) == trips) continue; // skip trips we already found
-            if (all_cards & single_masks[i]) {
+            if (all_cards & SINGLE_MASKS[i]) {
                 if (kicker1 == -1) {
                     kicker1 = 9-i;
                 } else if (kicker2 == -1) {
@@ -405,10 +384,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest pairs
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
-                    ((suitb_all & single_masks[i]) ? 1 : 0) +
-                    ((suitc_all & single_masks[i]) ? 1 : 0) +
-                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 2) {
             if (pair1==-1) {
                 pair1 = 9-i;
@@ -423,7 +402,7 @@ int GameState::best_hand(bool p) const {
     if (pair1 != -1 && pair2 != -1) {
         for (int i=0; i<9; i++) {
             if (((9-i)!=pair1) && ((9-i)!=pair2)) {
-                if (all_cards & single_masks[i]) {
+                if (all_cards & SINGLE_MASKS[i]) {
                     kicker = 9-i;
                     break;
                 }
@@ -444,10 +423,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest pair
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & single_masks[i]) ? 1 : 0) +
-                    ((suitb_all & single_masks[i]) ? 1 : 0) +
-                    ((suitc_all & single_masks[i]) ? 1 : 0) +
-                    ((suitd_all & single_masks[i]) ? 1 : 0);
+        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 2) {
             pair = 9-i;
             break;
@@ -458,7 +437,7 @@ int GameState::best_hand(bool p) const {
     if (pair != -1) {
         for (int i=0; i<9; i++) {
             if ((9-i) == pair) continue;
-            if (all_cards & single_masks[i]) {
+            if (all_cards & SINGLE_MASKS[i]) {
                 if (kicker1 == -1) {
                     kicker1 = 9-i;
                 } else if (kicker2 == -1) {
@@ -485,7 +464,7 @@ int GameState::best_hand(bool p) const {
 
     // Find best kickers
     for (int i=0; i<9; i++) {
-        if (all_cards & single_masks[i]) {
+        if (all_cards & SINGLE_MASKS[i]) {
             if (kicker1 == -1) {
                 kicker1 = 9-i;
             } else if (kicker2 == -1) {
@@ -510,19 +489,19 @@ int GameState::best_hand(bool p) const {
     return -1;
 }
 
-int GameState::showdown() const {
-    if (best_hand(0) == best_hand(1)) return 0;
+float GameState::showdown() const {
+    if (best_hand(0) == best_hand(1)) return 0.0f;
 
-    return (best_hand(0) > best_hand(1)) ? pot_size()/2 : -1 * pot_size()/2;
+    return (best_hand(0) > best_hand(1)) ? pot_size() * 0.5f : pot_size() * -0.5f;
 }
 
-int GameState::pot_size() const {
+float GameState::pot_size() const {
 
     uint8_t flop_action = flop_history >> 1;  // Ignore appearance flag
     uint8_t turn_action = turn_history >> 1;
     uint8_t rivr_action = rivr_history >> 1;
 
-    int pot = 20;
+    float pot = 20.0f;
 
     //   flop bet call             flop check bet call
     if ((flop_action == 0b110) || (flop_action == 0b11001)) pot *= 3;
@@ -542,7 +521,7 @@ int GameState::pot_size() const {
     return pot;
 }
 
-int GameState::utility(int player) const {
+float GameState::utility(bool p) const {
     if (!is_terminal()) {
         exit(1);
     }
@@ -552,52 +531,52 @@ int GameState::utility(int player) const {
     uint8_t rivr_action = rivr_history >> 1;
 
     //  fold preflop
-    if (flop_action == 0b11) return (player == 0) ? -5 : 5; 
+    if (flop_action == 0b11) return (p == 0) ? -5.0f : 5.0f; 
 
     //  bet fold
-    if (flop_action == 0b1110) return (player == 0) ? 10 : -10;
+    if (flop_action == 0b1110) return (p == 0) ? 10.0f : -10.0f;
 
     //  check bet fold
-    if (flop_action == 0b111001) return (player == 0) ? -10 : 10;
+    if (flop_action == 0b111001) return (p == 0) ? -10.0f : 10.0f;
 
     //  bet raise fold
-    if (flop_action == 0b111010) return (player == 0) ? -30 : 30;
+    if (flop_action == 0b111010) return (p == 0) ? -30.0f : 30.0f;
 
     //  check bet raise fold
-    if (flop_action == 0b1111111) return (player == 0) ? 30 : -30;
+    if (flop_action == 0b1111111) return (p == 0) ? 30.0f : -30.0f;
     
     //  bet fold
-    if (turn_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
+    if (turn_action == 0b1110) return (p == 0) ? pot_size() * 0.5f : pot_size() * -0.5f;
 
     //  check bet fold
-    if (turn_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;
+    if (turn_action == 0b111001) return (p == 0) ? pot_size() * -0.5f : pot_size() * 0.5f;
     
     //  check check
-    if (rivr_action == 0b101) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b101) return (p == 0) ? showdown() : -1.0f * showdown();
 
     //  bet call
-    if (rivr_action == 0b110) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b110) return (p == 0) ? showdown() : -1.0f * showdown();
 
     //  bet fold
-    if (rivr_action == 0b1110) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
+    if (rivr_action == 0b1110) return (p == 0) ? pot_size() * 0.5f : pot_size() * -0.5f;
 
     //  bet raise fold
-    if (rivr_action == 0b111010) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;;
+    if (rivr_action == 0b111010) return (p == 0) ? -1 * pot_size() * 0.5f : pot_size() * 0.5f;
 
     //  bet raise call
-    if (rivr_action == 0b11010) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b11010) return (p == 0) ? showdown() : -1.0f * showdown();
 
     //  check bet fold
-    if (rivr_action == 0b111001) return (player == 0) ? -1 * pot_size()/2 : pot_size()/2;
+    if (rivr_action == 0b111001) return (p == 0) ? pot_size() * -0.5f : pot_size() * 0.5f;
 
     //  check bet call
-    if (rivr_action == 0b11001) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b11001) return (p == 0) ? showdown() : -1.0f * showdown();
 
     //  check bet raise fold
-    if (rivr_action == 0b1111111) return (player == 0) ? pot_size()/2 : -1 * pot_size()/2;
+    if (rivr_action == 0b1111111) return (p == 0) ? pot_size() * 0.5f : pot_size() * -0.5f;
 
     //  check bet raise call
-    if (rivr_action == 0b1101001) return (player == 0) ? showdown() : -1 * showdown();
+    if (rivr_action == 0b1101001) return (p == 0) ? showdown() : -1.0f * showdown();
      
     // throw std::invalid_argument("Terminal history not able to be evaluated for utility.");
     
@@ -918,11 +897,11 @@ void GameState::apply_chance_action(int actions) {
 
     while (acted == false) {
         k = dis(gen);
-        if (!((suit_cards[k/9] & single_masks[k%9])==single_masks[k%9])) {
-            if (k/9==0 && actions>=30) suita = suita | (single_masks[k%9]<<18);
-            if (k/9==1 && actions>=30) suitb = suitb | (single_masks[k%9]<<18);
-            if (k/9==2 && actions>=30) suitc = suitc | (single_masks[k%9]<<18);
-            if (k/9==3 && actions>=30) suitd = suitd | (single_masks[k%9]<<18);
+        if (!((suit_cards[k/9] & SINGLE_MASKS[k%9])==SINGLE_MASKS[k%9])) {
+            if (k/9==0 && actions>=30) suita = suita | (SINGLE_MASKS[k%9]<<18);
+            if (k/9==1 && actions>=30) suitb = suitb | (SINGLE_MASKS[k%9]<<18);
+            if (k/9==2 && actions>=30) suitc = suitc | (SINGLE_MASKS[k%9]<<18);
+            if (k/9==3 && actions>=30) suitd = suitd | (SINGLE_MASKS[k%9]<<18);
 
             acted = true;
         }
@@ -952,7 +931,7 @@ void GameState::apply_chance_action(int actions) {
     }
 }
 
-void GameState::to_information_set() {
+InfoSet GameState::to_information_set() {
     // Mask out other player's cards
     uint32_t mask = (player == 0) ? 0b111111111000000000111111111 : 
                                     0b111111111111111111000000000;
@@ -961,35 +940,137 @@ void GameState::to_information_set() {
     suitc &= mask;
     suitd &= mask;
 
-    // Normalize suits
-    uint32_t suits[4] = {suita, suitb, suitc, suitd};
-    int indices[4] = {0, 1, 2, 3};
+    int p = p_id(player);
+    int rank = best_hand(player);  
+    float ars_score = 0.5;
 
-    // Sort indices based on suit values (descending order)
-    for (int i=0; i<3; ++i) {
-        for (int j=0; j<3-i; ++j) {
-            if (suits[indices[j]] < suits[indices[j + 1]]) {
-                std::swap(indices[j], indices[j + 1]);
+    if (turn_history%2==0) ars_score = ars_table(0, rank, p);
+    else if (rivr_history%2==0) ars_score = ars_table(1, rank, p);
+    else if (rivr_history%2==1) ars_score = ars_table(2, rank, p); 
+}
+
+float GameState::rivr_hand_strength() {
+
+    float total = 0.0f;
+    float wins = 0.0f;
+
+    suita &= 0b111111111000000000111111111;
+    suitb &= 0b111111111000000000111111111;
+    suitc &= 0b111111111000000000111111111;
+    suitd &= 0b111111111000000000111111111;
+
+    uint16_t suita_all = ((suita>>18) | (suita>>9) | suita) & 0b111111111;
+    uint16_t suitb_all = ((suitb>>18) | (suitb>>9) | suitb) & 0b111111111;
+    uint16_t suitc_all = ((suitc>>18) | (suitc>>9) | suitc) & 0b111111111;
+    uint16_t suitd_all = ((suitd>>18) | (suitd>>9) | suitd) & 0b111111111;
+
+    int turn_rank = turn & 0b1111;
+    int turn_suit = (turn>>4) & 0b11;
+    if (turn_suit == 0) suita_all |= (0b1<<turn_rank);
+    if (turn_suit == 0b1) suitb_all |= (0b1<<turn_rank);
+    if (turn_suit == 0b10) suitc_all |= (0b1<<turn_rank);
+    if (turn_suit == 0b11) suitd_all |= (0b1<<turn_rank);
+
+    int rivr_rank = rivr & 0b1111;
+    int rivr_suit = (rivr>>4) & 0b11;
+    if (rivr_suit == 0) suita_all |= (0b1<<rivr_rank);
+    if (rivr_suit == 0b1) suitb_all |= (0b1<<rivr_rank);
+    if (rivr_suit == 0b10) suitc_all |= (0b1<<rivr_rank);
+    if (rivr_suit == 0b11) suitd_all |= (0b1<<rivr_rank);
+
+    std::array<uint16_t, 4> suit_cards_all = {suita_all, suitb_all, suitc_all, suitd_all};
+
+    for (int c1=0; c1<36; c1++) {
+        for (int c2=0; c2<36; c2++) {
+            if ((c2!=c1) &&
+                (!((suit_cards_all[c1/9] & SINGLE_MASKS[8-(c1%9)])==SINGLE_MASKS[8-(c1%9)])) &&
+                (!((suit_cards_all[c2/9] & SINGLE_MASKS[8-(c2%9)])==SINGLE_MASKS[8-(c2%9)]))) {
+
+                std::array<uint32_t, 4> suit_cards = {suita, suitb, suitc, suitd};
+                uint32_t tempa = suita;
+                uint32_t tempb = suitb;
+                uint32_t tempc = suitc;
+                uint32_t tempd = suitd;
+
+                suit_cards[c1/9] |= (0b1 << (9+(c1%9)));
+                suit_cards[c2/9] |= (0b1 << (9+(c2%9)));
+                turn_history = 1;
+                rivr_history = 1;
+                
+                suita = suit_cards[0];
+                suitb = suit_cards[1];
+                suitc = suit_cards[2];
+                suitd = suit_cards[3];
+
+                int player_best = best_hand(0);
+                int opponent_best = best_hand(1);
+
+                if (player_best > opponent_best) {
+                    wins += 1.0f;   
+                } else if (player_best == opponent_best) {
+                    wins += 0.5f;
+                }
+
+                total += 1;
+
+                suita = tempa;
+                suitb = tempb;
+                suitc = tempc;
+                suitd = tempd;
             }
         }
     }
 
-    // Create a mapping from old suit index to new suit index
-    int suit_map[4];
-    for (int i=0; i<4; ++i) {
-        suit_map[indices[i]] = i;
+    return wins/total;
+}
+
+int GameState::p_id(bool p) const {
+    std::array<uint32_t, 4> player_cards;
+
+    if (p==0) player_cards = {(suita & 0b111111111), (suitb & 0b111111111), (suitc & 0b111111111), (suitd & 0b111111111)};
+    if (p==1) player_cards = {((suita>>9) & 0b111111111), ((suitb>>9) & 0b111111111), ((suitc>>9) & 0b111111111), ((suitd>>9) & 0b111111111)};
+
+    int p1 = -1;
+    int p2 = -1;
+
+    for (int k=0; k<36; k++) {
+        if (player_cards[k/9] & (0b1<<k%9)) {
+            if (p1==-1) p1=k;
+            else if (p2==-1) p2=k;
+        }
     }
 
-    // Reassign suits based on sorted order
-    suita = suits[indices[0]];
-    suitb = suits[indices[1]];
-    suitc = suits[indices[2]];
-    suitd = suits[indices[3]];
+    return pocket_id(p1, p2);
+}
 
-    // Adjust turn and rivr
-    // Extract suit (bits 4-5), map it, then put it back in place
-    turn = (turn & 0xF) | ((suit_map[(turn >> 4) & 0b11] << 4) & 0x30);
-    rivr = (rivr & 0xF) | ((suit_map[(rivr >> 4) & 0b11] << 4) & 0x30);
+size_t hash_gamestate(const GameState& gs) {
+    size_t seed = 0x9e3779b9;
+    std::hash<uint32_t> hash_uint32;
+    std::hash<uint8_t> hash_uint8;
+    std::hash<bool> hash_bool;
+
+    seed ^= hash_uint32(gs.suita) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint32(gs.suitb) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint32(gs.suitc) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint32(gs.suitd) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint8(gs.turn) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint8(gs.rivr) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint8(gs.flop_history) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint8(gs.turn_history) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_uint8(gs.rivr_history) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_bool(gs.call_preflop) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_bool(gs.player) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+    return seed % 40000007;
+}
+
+int pocket_id(int p1, int p2) {
+    bool suited = false;
+    if ((p1/9)==(p2/9)) {
+        suited = true;
+    }
+    return (suited) ? std::max((p1%9)*9 + p2%9, (p2%9)*9 + p1%9)
+                    : std::min((p1%9)*9 + p2%9, (p2%9)*9 + p1%9);
 }
 
 GameState generate_random_initial_state() {
@@ -1011,8 +1092,6 @@ GameState generate_random_initial_state() {
         } while (std::find(card_indices.begin(), card_indices.begin() + i, card_indices[i]) != card_indices.begin() + i);
     }
 
-    // std::cout << card_indices[0] << " " << card_indices[1] << "\n";
-
     // Assign cards to players
     for (int i=0; i<2; ++i) {
         int suit = card_indices[i] / 9;
@@ -1031,23 +1110,3 @@ GameState generate_random_initial_state() {
                      call_preflop, player);
 }
 
-size_t hash_gamestate(const GameState& gs) {
-    size_t seed = 3;
-    std::hash<uint32_t> hash_uint32;
-    std::hash<uint8_t> hash_uint8;
-    std::hash<bool> hash_bool;
-
-    seed ^= hash_uint32(gs.suita) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint32(gs.suitb) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint32(gs.suitc) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint32(gs.suitd) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint8(gs.turn) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint8(gs.rivr) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint8(gs.flop_history) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint8(gs.turn_history) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_uint8(gs.rivr_history) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_bool(gs.call_preflop) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= hash_bool(gs.player) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
-    return seed % 40000007;
-}

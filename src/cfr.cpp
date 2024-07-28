@@ -1,21 +1,9 @@
 #include "cfr.h"
-#include <map>
-#include <algorithm>
-#include <random>
-#include <array>
-#include <stdexcept>
-#include <string>
-#include <sstream>
-#include <fstream>
+#include "constants.h"
 
-const size_t ARRAY_SIZE = 40000007;
-std::array<std::array<float, 3>, ARRAY_SIZE> regret_sum;
-std::array<std::array<float, 3>, ARRAY_SIZE> strategy_sum;
+std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> regret_sum;
+std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> strategy_sum;
 
-int NUM_CHANCE_SAMPLES = 3;
-int NUM_ENEMY_SAMPLES = 1;
-
-// Define the output operator for std::array<float, 3>
 std::ostream& operator<<(std::ostream& os, const std::array<float, 3>& arr) {
     os << "[";
     for (size_t i = 0; i < arr.size(); ++i) {
@@ -29,8 +17,8 @@ std::ostream& operator<<(std::ostream& os, const std::array<float, 3>& arr) {
 }
 
 void save_cfr_data(const std::string& filename,
-                   const std::array<std::array<float, 3>, ARRAY_SIZE>& regret_sum,
-                   const std::array<std::array<float, 3>, ARRAY_SIZE>& strategy_sum) {
+                   const std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE>& regret_sum,
+                   const std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE>& strategy_sum) {
     std::ofstream file(filename, std::ios::binary);
     if (!file) {
         throw std::runtime_error("Unable to open file for writing: " + filename);
@@ -38,18 +26,18 @@ void save_cfr_data(const std::string& filename,
 
     // Save regret_sum
     file.write(reinterpret_cast<const char*>(regret_sum.data()), 
-               sizeof(float) * 3 * ARRAY_SIZE);
+               sizeof(float) * 3 * STRATEGY_ARRAY_SIZE);
 
     // Save strategy_sum
     file.write(reinterpret_cast<const char*>(strategy_sum.data()), 
-               sizeof(float) * 3 * ARRAY_SIZE);
+               sizeof(float) * 3 * STRATEGY_ARRAY_SIZE);
 
     file.close();
 }
 
 void load_cfr_data(const std::string& filename,
-                   std::array<std::array<float, 3>, ARRAY_SIZE>& regret_sum,
-                   std::array<std::array<float, 3>, ARRAY_SIZE>& strategy_sum) {
+                   std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE>& regret_sum,
+                   std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE>& strategy_sum) {
     std::ifstream file(filename, std::ios::binary);
     if (!file) {
         throw std::runtime_error("Unable to open file for reading: " + filename);
@@ -57,13 +45,21 @@ void load_cfr_data(const std::string& filename,
 
     // Load regret_sum
     file.read(reinterpret_cast<char*>(regret_sum.data()), 
-              sizeof(float) * 3 * ARRAY_SIZE);
+              sizeof(float) * 3 * STRATEGY_ARRAY_SIZE);
 
     // Load strategy_sum
     file.read(reinterpret_cast<char*>(strategy_sum.data()), 
-              sizeof(float) * 3 * ARRAY_SIZE);
+              sizeof(float) * 3 * STRATEGY_ARRAY_SIZE);
 
     file.close();
+
+    std::cout << "First few elements after loading:\n";
+    for (int i = 0; i < std::min(10, static_cast<int>(STRATEGY_ARRAY_SIZE)); ++i) {
+        std::cout << "regret_sum[" << i << "]: " 
+                  << regret_sum[i][0] << ", " << regret_sum[i][1] << ", " << regret_sum[i][2] << "\n";
+        std::cout << "strategy_sum[" << i << "]: " 
+                  << strategy_sum[i][0] << ", " << strategy_sum[i][1] << ", " << strategy_sum[i][2] << "\n";
+    }
 }
 
 int sample_action(std::array<float, 3> strategy) {
@@ -221,12 +217,16 @@ float mccfr(int iterations) {
 
     // Initialize all elements to {0.0f, 0.0f, 0.0f}
     std::array<float, 3> init = {0.0f, 0.0f, 0.0f};
-    for (int i=0; i<ARRAY_SIZE; i++) {
+    for (int i=0; i<STRATEGY_ARRAY_SIZE; i++) {
         strategy_sum[i] = init;
         regret_sum[i] = init;
     }
 
-    load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+    try {
+        load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
 
     for (int t=0; t<iterations; t++) {
         for (int player=0; player<2; player++) {
@@ -297,8 +297,10 @@ float mccfr(int iterations) {
     return util[0] / iterations;
 }
 
-void print_nonzero_strategy(int n) {
-    load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+void print_nonzero_strategy(int n, std::string filename) {
+
+    load_cfr_data(filename, regret_sum, strategy_sum);
+    
     for (int i=0; i<n; i++) {
         GameState gs = generate_random_initial_state();
 
@@ -306,106 +308,90 @@ void print_nonzero_strategy(int n) {
         gs.apply_chance_action(32);
         gs.apply_chance_action(31);
         gs.apply_chance_action(30);
-        gs.apply_action(0);
-        gs.apply_action(0);
-        gs.apply_chance_action(29);
-        gs.apply_action(0);
-        gs.apply_action(1);
-        gs.apply_action(1);
-        gs.apply_chance_action(28);
-        gs.apply_action(1);
-        gs.apply_action(2);
+        // gs.apply_action(0);
+        // gs.apply_action(0);
+        // gs.apply_chance_action(29);
+        // gs.apply_action(0);
+        // gs.apply_action(1);
+        // gs.apply_action(1);
+        // gs.apply_chance_action(28);
+        // gs.apply_action(1);
+        // gs.apply_action(2);
 
         gs.to_information_set();
 
-        std::array<float, 3> strategy = get_average_strategy(gs);
+        std::array<float, 3> strategy = get_strategy(gs);
 
-        if (((strategy[0] > 0.35) && (strategy[2] > 0.01)) || (strategy[0] > 0.51)) {
-            std::cout << gs.to_string();
-            std::cout << "Strategy: " << strategy << "\n\n";
-        }
+        std::cout << gs.to_string();
+        std::cout << "Strategy:         " << strategy << "\n";
+        std::cout << "Average strategy: " << get_average_strategy(gs) << "\n";
+        std::cout << "Strategy_sum:     " << strategy_sum[hash_gamestate(gs)] << "\n";
+        std::cout << "Regret_sum:       " << regret_sum[hash_gamestate(gs)] << "\n\n";
     }
 }
 
-float as_traverse_tree(GameState gs, bool active_player, float p0, float p1) {
+float as_traverse_tree(GameState gs, bool active_player, float q) {
     // Terminal
-    if (gs.is_terminal()) {
-        // std::cout << gs.to_string();
-        // std::cout << "Utility to player " << active_player << ": " << gs.utility(active_player) << "\n\n";
-        return gs.utility(active_player);
-    }
+    if (gs.is_terminal()) return gs.utility(active_player) / q;
 
     // Chance
     if (gs.is_chance()) {
-        float util = 0;
-        for (int i=0; i<NUM_CHANCE_SAMPLES; i++) {
-            int actions = gs.num_chance_actions();
-            GameState temp = gs;
-            temp.apply_chance_action(actions);
-            util += traverse_tree(temp, active_player, p0 * (1.0f/actions), p1 * (1.0f/actions));
-        }
-        return util / NUM_CHANCE_SAMPLES;
+        GameState temp = gs;
+        temp.apply_chance_action(temp.num_chance_actions());
+        return as_traverse_tree(temp, active_player, q);
     }
 
     GameState info_set = gs;
     info_set.to_information_set();
-    int actions;
+    int actions = info_set.num_actions();
     size_t hash = hash_gamestate(info_set);
+    std::array<float, 3> strategy = get_strategy(info_set);
 
-    try {
-        actions = info_set.num_actions();
-    } catch (const std::invalid_argument& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-
-    if (info_set.player==active_player) {
-        std::array<float, 3> util = {0.0f, 0.0f, 0.0f};
-        float node_util = 0;
-        std::array<float, 3> strategy = get_strategy(info_set);
-        
-        for (int i=0; i<actions; i++) {
-            GameState temp = gs;
-            temp.apply_action(i);
-            float child_util = (active_player == 0) 
-                             ? traverse_tree(temp, active_player, p0 * strategy[i], p1) 
-                             : traverse_tree(temp, active_player, p0, p1 * strategy[i]);
-            util[i] = child_util;
-            node_util += strategy[i] * child_util;
+    if (info_set.player != active_player) {
+        for (int a=0; a<actions; a++) {
+            strategy_sum[hash][a] += strategy[a] / q;
         }
 
-        for (int i=0; i<actions; i++) {
-
-            regret_sum[hash][i] += (active_player == 0)
-                                     ? (util[i] - node_util) * p1
-                                     : (util[i] - node_util) * p0;
-            
-            strategy_sum[hash][i] += (active_player == 0)
-                                       ? strategy[i] * p0
-                                       : strategy[i] * p1;
-        }
-
-        return node_util;
-
-    } else if (info_set.player != active_player) {
-        std::array<float, 3> strategy = get_strategy(info_set);
+        // Sample inactive player's action and compute utility for it
         int sampled_action = sample_action(strategy);
-        GameState temp = gs;
-        temp.apply_action(sampled_action);
+        GameState child = gs;
+        child.apply_action(sampled_action);
 
-        float util = (active_player == 0) 
-             ? traverse_tree(temp, active_player, p0, p1 * strategy[sampled_action]) 
-             : traverse_tree(temp, active_player, p0 * strategy[sampled_action], p1) ;
-
-        for (int i=0; i<actions; i++) {
-            strategy_sum[hash][i] += (active_player == 0)
-                                       ? strategy[i] * p0
-                                       : strategy[i] * p1;
-        }
-
-        return util;
+        return as_traverse_tree(child, active_player, q);
     }
 
-    return 0.0f;
+    // Active player's turn
+
+    std::array<float, 3> util = {0.0f, 0.0f, 0.0f};
+    float node_util = 0;
+    float sum_over_all_actions = 0;
+    static thread_local std::random_device rd;
+    static thread_local std::mt19937 gen(rd());
+    static thread_local std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+
+    for (int a=0; a<actions; a++) {
+        sum_over_all_actions += strategy_sum[hash][a];
+    }
+    
+    for (int a=0; a<actions; a++) {
+        float res = (BETA + TAU * strategy_sum[hash][a]) / 
+                    (BETA + sum_over_all_actions);
+        float p = std::max(EPSILON, res);
+
+        if (dis(gen) < p) {
+            GameState child = gs;
+            child.apply_action(a);
+            util[a] = as_traverse_tree(child, active_player, q * std::min(1.0f, p));
+        }
+
+        node_util += strategy[a] * util[a];
+    }
+
+    for (int a=0; a<actions; a++) {
+        regret_sum[hash][a] += util[a] - node_util;
+    }
+
+    return node_util;
 }
 
 float as_mccfr(int iterations) {
@@ -413,28 +399,32 @@ float as_mccfr(int iterations) {
 
     // Initialize all elements to {0.0f, 0.0f, 0.0f}
     std::array<float, 3> init = {0.0f, 0.0f, 0.0f};
-    for (int i=0; i<ARRAY_SIZE; i++) {
+    for (int i=0; i<STRATEGY_ARRAY_SIZE; i++) {
         strategy_sum[i] = init;
         regret_sum[i] = init;
     }
 
-    load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+    try {
+        load_cfr_data("as_latest_checkpoint.dat", regret_sum, strategy_sum);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
 
     for (int t=0; t<iterations; t++) {
         for (int player=0; player<2; player++) {
             GameState gs = generate_random_initial_state();
-            if (player==0) util[0] += traverse_tree(gs, player, 1, 1);
-    
-            if (player==1) util[1] += traverse_tree(gs, player, 1, 1);
+            if (player==0) util[0] += as_traverse_tree(gs, player, 1);
+            if (player==1) util[1] += as_traverse_tree(gs, player, 1);
         }
-        if (t%1000==0) {
+
+        if (t%20000==0) {
             std::cout << "Iteration i=" << t << ": " << util[0]/iterations << " (utility to SB)\n";
             std::cout << "                 " << util[1]/iterations << " (utility to BB)\n";
         }
 
-        if ((t+1)%2500==0) {
+        if ((t+1)%100000==0) {
             std::ostringstream filename;
-            filename << "latest_checkpoint.dat";
+            filename << "as_latest_checkpoint.dat";
             save_cfr_data(filename.str(), regret_sum, strategy_sum);
         }
     }
@@ -465,140 +455,8 @@ float as_mccfr(int iterations) {
                 gs.apply_action(sampled_action);
             }
         }
-        std::cout << "Sample game #" << i+1 << " over.\n";
+        std::cout << "Sample game #" << i+1 << " over.\n\n";
     }
 
     return util[0] / iterations;
 }
-
-/*
-
-function traverseTree(node, p0, p1):
-    if node is a terminal node:
-        return utility for the current player
-    
-    if node is a chance node:
-        // Handle chance nodes
-        for each possible outcome o:
-            traverseTree(node.next[o], p0 * P(o), p1 * P(o))
-        return
-    
-    I = information set corresponding to node
-    strategy = getStrategy(I, regretSum[I])
-
-    if node is a player 0 node:
-        util = 0
-        nodeUtil = 0
-        for each action a in A:
-            nextNode = node.next[a]
-            childUtil = traverseTree(nextNode, p0 * strategy[a], p1)
-            util[a] = childUtil
-            nodeUtil += strategy[a] * childUtil
-
-        // Update regrets
-        for each action a in A:
-            regretSum[I][a] += (util[a] - nodeUtil) * p1
-            strategySum[I][a] += p0 * strategy[a]
-        
-        return nodeUtil
-    
-    else if node is a player 1 node:
-        util = 0
-        nodeUtil = 0
-        for each action a in A:
-            nextNode = node.next[a]
-            childUtil = traverseTree(nextNode, p0, p1 * strategy[a])
-            util[a] = childUtil
-            nodeUtil += strategy[a] * childUtil
-
-        // Update regrets
-        for each action a in A:
-            regretSum[I][a] += (util[a] - nodeUtil) * p0
-            strategySum[I][a] += p1 * strategy[a]
-        
-        return nodeUtil
-
-def get_average_strategy(strategy_sum):
-    avg_strategy = {}
-    
-    for information_set_int in strategy_sum:
-        information_set = int_to_list(information_set_int)
-        actions = num_actions(information_set)
-        avg_strategy[information_set_int] = [0 for a in range(13)]
-        normalizing_sum = 0
-        
-        for a in range(actions):
-            normalizing_sum += strategy_sum[information_set_int][12-a]
-        
-        for a in range(actions):
-            if normalizing_sum > 0:
-                avg_strategy[information_set_int][12-a] = strategy_sum[information_set_int][12-a] / normalizing_sum
-            else:
-                avg_strategy[information_set_int][12-a] = 1.0 / actions
-
-    return avg_strategy
-
-
-function MCCFR(I, T, A):
-    // Initialize regrets and strategies
-    for all I in information sets:
-        for all a in A:
-            regretSum[I][a] = 0
-            strategySum[I][a] = 0
-
-    // Perform T iterations
-    for t from 1 to T:
-        // Traverse the game tree
-        traverseTree(root, 1, 1)
-
-    // Compute the average strategy
-    for all I in information sets:
-        normalize(strategySum[I])
-
-// Function to traverse the game tree
-function traverseTree(node, p0, p1):
-    if node is a terminal node:
-        return utility for the current player
-    
-    if node is a chance node:
-        // Handle chance nodes
-        for each possible outcome o:
-            traverseTree(node.next[o], p0 * P(o), p1 * P(o))
-        return
-    
-    I = information set corresponding to node
-    strategy = getStrategy(I, regretSum[I])
-
-    if node is a player 0 node:
-        util = 0
-        nodeUtil = 0
-        for each action a in A:
-            nextNode = node.next[a]
-            childUtil = traverseTree(nextNode, p0 * strategy[a], p1)
-            util[a] = childUtil
-            nodeUtil += strategy[a] * childUtil
-
-        // Update regrets
-        for each action a in A:
-            regretSum[I][a] += (util[a] - nodeUtil) * p1
-            strategySum[I][a] += p0 * strategy[a]
-        
-        return nodeUtil
-    
-    else if node is a player 1 node:
-        util = 0
-        nodeUtil = 0
-        for each action a in A:
-            nextNode = node.next[a]
-            childUtil = traverseTree(nextNode, p0, p1 * strategy[a])
-            util[a] = childUtil
-            nodeUtil += strategy[a] * childUtil
-
-        // Update regrets
-        for each action a in A:
-            regretSum[I][a] += (util[a] - nodeUtil) * p0
-            strategySum[I][a] += p1 * strategy[a]
-        
-        return nodeUtil
-
-*/

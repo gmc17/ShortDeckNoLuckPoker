@@ -2,6 +2,19 @@
 #include <string>
 #include <functional>
 #include <iostream>
+#include <sstream>
+#include <vector>
+#include <array>
+#include <stdexcept>
+#include <initializer_list>
+#include <iostream>
+#include <bitset>
+#include <random>
+#include <cstdint>
+#include <sstream>
+#include <unordered_map>
+
+#include "info_set.h"
 
 class GameState {
 
@@ -82,18 +95,23 @@ public:
 	std::string to_string() const;
 	bool operator==(const GameState& other) const;
 
-	// CFR methods
+	// Game logic
 	bool is_terminal() const;
 	bool is_chance() const;
-	int showdown() const;
 	int best_hand(bool p) const;
-	int pot_size() const;
-	int utility(int player) const;
+	float showdown() const;
+	float pot_size() const;
+	float utility(bool p) const;
+	
 	int num_actions() const;
 	int num_chance_actions() const;
 	void apply_action(int action);
 	void apply_chance_action(int actions);
-	void to_information_set();
+
+	// CFR helpers
+	InfoSet to_information_set();
+	float rivr_hand_strength();
+	int p_id(bool p) const;
 	
 	uint32_t suita;
 	uint32_t suitb;
@@ -108,7 +126,7 @@ public:
 	bool player;
 };
 
-void swap(int* xp, int* yp);
-GameState generate_random_initial_state();
 size_t hash_gamestate(const GameState& gs);
-void printBinary(uint8_t value);
+
+int pocket_id(int p1, int p2);
+GameState generate_random_initial_state();
