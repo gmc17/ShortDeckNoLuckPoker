@@ -508,17 +508,25 @@ float GameState::pot_size() const {
     //   flop bet call             flop check bet call
     if ((flop_action == 0b110) || (flop_action == 0b11001)) pot *= 3;
 
-    //   flop bet raise call        flop check bet raise call
-    if ((flop_action == 0b1101) || (flop_action == 0b1101001)) pot *= 6;
+    //   flop bet raise call         flop check bet raise call
+    if ((flop_action == 0b11010) || (flop_action == 0b1101001)) pot *= 6;
+
+    //   flop bet raise fold          flop check bet raise fold
+    if ((flop_action == 0b111010) || (flop_action == 0b11101001)) pot *= 3;
+
 
     //   turn bet call             turn check bet call
     if ((turn_action == 0b110) || (turn_action == 0b11001)) pot *= 3;
 
-    //   river bet call             river check bet call
+
+    //   river bet call            river check bet call
     if ((rivr_action == 0b110) || (rivr_action == 0b11001)) pot *= 2;
 
-    //   river bet raise call          river check bet raise call
-    if ((rivr_action == 0b110100) || (rivr_action == 0b1101001)) pot = 800;
+    //   river bet raise call        river check bet raise call
+    if ((rivr_action == 0b11010) || (rivr_action == 0b1101001)) pot = 800;
+
+    //   river bet raise fold         river check bet raise fold
+    if ((rivr_action == 0b111010) || (rivr_action == 0b11101001)) pot *= 3;
 
     return pot;
 }
@@ -1152,10 +1160,10 @@ GameState generate_random_initial_state() {
 
 void play_computer(bool p) {
     
-    int cumulative_winnings = 0;
+    float cumulative_winnings = 0.0f;
     bool keep_playing = true;
 
-    load_cfr_data("as_latest_checkpoint.dat", regret_sum, strategy_sum);
+    load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
 
     while (keep_playing == true) {
         GameState gs = generate_random_initial_state();
@@ -1164,16 +1172,16 @@ void play_computer(bool p) {
             while (gs.is_chance()){
                 int num_chance_actions = gs.num_chance_actions();
                 gs.apply_chance_action(num_chance_actions);
-                if (num_chance_actions==30) std::cout << "******************** FLOP ********************\n";
-                if (num_chance_actions==29) std::cout << "******************** TURN ********************\n";
-                if (num_chance_actions==28) std::cout << "******************** RIVER ********************\n";
+                // if (num_chance_actions==30) std::cout << "******************** FLOP ********************\n";
+                // if (num_chance_actions==29) std::cout << "******************** TURN ********************\n";
+                // if (num_chance_actions==28) std::cout << "******************** RIVER ********************\n";
             }
 
             InfoSet is = gs.to_information_set();
             std::array<float, 3> average_strategy = get_average_strategy(is);
         
             std::array<uint32_t, 4> suits_backup = {gs.suita, gs.suitb, gs.suitc, gs.suitd};
-            uint32_t mask = (gs.player == 0) ? 0b111111111000000000111111111
+            uint32_t mask = (p == 0) ? 0b111111111000000000111111111
                                              : 0b111111111111111111000000000;
 
             gs.suita &= mask;
@@ -1181,6 +1189,7 @@ void play_computer(bool p) {
             gs.suitc &= mask;
             gs.suitd &= mask;
 
+            std::cout << "**********************************************\n";
             std::cout << gs.to_string() << "\n";
 
             gs.suita = suits_backup[0];
@@ -1192,26 +1201,30 @@ void play_computer(bool p) {
                 // Player's turn
                 std::cout << "Player turn. Input action: ";
 
-                int action = 3;
-                std::cin >> action;
+                std::string action_str;
+                std::cin >> action_str;
 
                 std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
 
-                gs.apply_action(action);
+                gs.apply_action(STRING_TO_ACTION.at(action_str));
             } else {
                 // Computer's turn
                 int sampled_action = sample_action(average_strategy);
 
                 std::cout << "Computer turn. Sampled action: " << sampled_action << "\n";
-                std::cout << "GTO strategy: " << average_strategy << "\n\n";
+                // std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
 
                 gs.apply_action(sampled_action);
             }
         }
-        std::cout << "Final gamestate\n" << gs.to_string() << "\n";
+        std::cout << "Terminal game state:\n" << gs.to_string() << "\n";
         cumulative_winnings += gs.utility(p);
         std::cout << "HAND WINNINGS: " << gs.utility(p) << "\n";
-        std::cout << "CUMULATIVE WINNINGS: " << cumulative_winnings << "\n**********************************************\n\n" << "\n\n";
+        std::cout << "CUMULATIVE WINNINGS: " << cumulative_winnings << "\n**********************************************\n";
+        std::cout << "Continue playing? (Y/n): "; 
 
+        char in;
+        std::cin >> in;
+        if (in=='n') keep_playing = false;
     }
 }

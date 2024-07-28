@@ -1,6 +1,4 @@
 #include <iostream>
-#include <array>
-#include <unordered_map>
 
 #include "game_state.h"
 #include "ars_table.h"
@@ -101,9 +99,20 @@ int main() {
 	//     } 
 	// }
 
-    // mccfr(100000);
+    // const int num_runs = 1;
+    // const int iterations = 1000000;
+	// double total_time = 0.0;
 
-    as_mccfr(100000);
+	// for (int i=0; i<num_runs; i++) {
+	//     auto start = std::chrono::high_resolution_clock::now();
+	//     as_mccfr(iterations);
+	//     auto end = std::chrono::high_resolution_clock::now();
+	//     std::chrono::duration<double> elapsed = end - start;
+	//     total_time += elapsed.count();
+	// }
+
+	// std::cout << "Parallel AS-MCCFR time for " << iterations << " iterations: " 
+	//           << total_time / num_runs << " seconds." << std::endl;
 
     play_computer(0);
 }

@@ -9,19 +9,23 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <atomic>
+#include <thread>
 
 #include "game_state.h"
 #include "info_set.h"
 
-int sample_action(std::array<float, 3> strategy);
 std::array<float, 3> get_strategy(const InfoSet& info_set);
 std::array<float, 3> get_average_strategy(const InfoSet& info_set);
-float traverse_tree(GameState gs, bool active_player, float p0, float p1);
-float mccfr(int iterations);
+int sample_action(std::array<float, 3> strategy);
 void print_nonzero_strategy(int n, std::string filename);
 
-float as_traverse_tree(GameState gs, bool active_player, float q);
+void sample_games(int iterations);
+float calculate_exploitability(int iterations);
+
 float as_mccfr(int iterations);
+void as_mccfr_worker(int start, int end);
+float as_traverse_tree(GameState gs, bool active_player, float q);
 
 std::ostream& operator<<(std::ostream& os, const std::array<float, 3>& arr);
 
