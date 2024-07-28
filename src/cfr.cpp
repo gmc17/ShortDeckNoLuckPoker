@@ -1,8 +1,8 @@
 #include "cfr.h"
 #include "constants.h"
 
-std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> regret_sum;
-std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> strategy_sum;
+extern std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> regret_sum;
+extern std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> strategy_sum;
 
 std::ostream& operator<<(std::ostream& os, const std::array<float, 3>& arr) {
     os << "[";
@@ -52,14 +52,6 @@ void load_cfr_data(const std::string& filename,
               sizeof(float) * 3 * STRATEGY_ARRAY_SIZE);
 
     file.close();
-
-    std::cout << "First few elements after loading:\n";
-    for (int i = 0; i < std::min(10, static_cast<int>(STRATEGY_ARRAY_SIZE)); ++i) {
-        std::cout << "regret_sum[" << i << "]: " 
-                  << regret_sum[i][0] << ", " << regret_sum[i][1] << ", " << regret_sum[i][2] << "\n";
-        std::cout << "strategy_sum[" << i << "]: " 
-                  << strategy_sum[i][0] << ", " << strategy_sum[i][1] << ", " << strategy_sum[i][2] << "\n";
-    }
 }
 
 int sample_action(std::array<float, 3> strategy) {
@@ -416,9 +408,9 @@ float as_mccfr(int iterations) {
             if (player==1) util[1] += as_traverse_tree(gs, player, 1);
         }
 
-        if (t%20000==0) {
-            std::cout << "Iteration i=" << t << ": " << util[0]/t << " (utility to SB)\n";
-            std::cout << "                 " << util[1]/t << " (utility to BB)\n";
+        if ((t+1)%20000==0) {
+            std::cout << "Iteration i=" << t << ": " << util[0]/(t+1) << " (utility to SB)\n";
+            std::cout << "                   " << util[1]/(t+1) << " (utility to BB)\n";
         }
 
         if ((t+1)%500000==0) {

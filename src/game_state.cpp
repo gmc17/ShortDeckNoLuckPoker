@@ -2,6 +2,7 @@
 #include "ars_table.h"
 #include "constants.h"
 #include "info_set.h"
+#include "cfr.h"
 
 GameState::GameState(uint32_t suita, 
                      uint32_t suitb, 
@@ -28,6 +29,8 @@ GameState::GameState(uint32_t suita,
                      player(player) {}
 
 ARSTable ars_table;
+std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> regret_sum;
+std::array<std::array<float, 3>, STRATEGY_ARRAY_SIZE> strategy_sum;
 
 std::string GameState::to_string() const {
     std::stringstream ss;
@@ -521,9 +524,7 @@ float GameState::pot_size() const {
 }
 
 float GameState::utility(bool p) const {
-    if (!is_terminal()) {
-        exit(1);
-    }
+    if (!is_terminal()) exit(1);
 
     uint8_t flop_action = flop_history >> 1;  // Ignore appearance flag
     uint8_t turn_action = turn_history >> 1;
@@ -1149,3 +1150,68 @@ GameState generate_random_initial_state() {
                      call_preflop, player);
 }
 
+void play_computer(bool p) {
+    
+    int cumulative_winnings = 0;
+    bool keep_playing = true;
+
+    load_cfr_data("as_latest_checkpoint.dat", regret_sum, strategy_sum);
+
+    while (keep_playing == true) {
+        GameState gs = generate_random_initial_state();
+
+        while (!gs.is_terminal()) {
+            while (gs.is_chance()){
+                int num_chance_actions = gs.num_chance_actions();
+                gs.apply_chance_action(num_chance_actions);
+                if (num_chance_actions==30) std::cout << "******************** FLOP ********************\n";
+                if (num_chance_actions==29) std::cout << "******************** TURN ********************\n";
+                if (num_chance_actions==28) std::cout << "******************** RIVER ********************\n";
+            }
+
+            InfoSet is = gs.to_information_set();
+            std::array<float, 3> average_strategy = get_average_strategy(is);
+        
+            std::array<uint32_t, 4> suits_backup = {gs.suita, gs.suitb, gs.suitc, gs.suitd};
+            uint32_t mask = (gs.player == 0) ? 0b111111111000000000111111111
+                                             : 0b111111111111111111000000000;
+
+            gs.suita &= mask;
+            gs.suitb &= mask;
+            gs.suitc &= mask;
+            gs.suitd &= mask;
+
+            std::cout << gs.to_string() << "\n";
+
+            gs.suita = suits_backup[0];
+            gs.suitb = suits_backup[1];
+            gs.suitc = suits_backup[2];
+            gs.suitd = suits_backup[3];
+
+            if (gs.player==p) {
+                // Player's turn
+                std::cout << "Player turn. Input action: ";
+
+                int action = 3;
+                std::cin >> action;
+
+                std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
+
+                gs.apply_action(action);
+            } else {
+                // Computer's turn
+                int sampled_action = sample_action(average_strategy);
+
+                std::cout << "Computer turn. Sampled action: " << sampled_action << "\n";
+                std::cout << "GTO strategy: " << average_strategy << "\n\n";
+
+                gs.apply_action(sampled_action);
+            }
+        }
+        std::cout << "Final gamestate\n" << gs.to_string() << "\n";
+        cumulative_winnings += gs.utility(p);
+        std::cout << "HAND WINNINGS: " << gs.utility(p) << "\n";
+        std::cout << "CUMULATIVE WINNINGS: " << cumulative_winnings << "\n**********************************************\n\n" << "\n\n";
+
+    }
+}

@@ -127,5 +127,6 @@ public:
 
 size_t hash_gamestate(const GameState& gs);
 
+void play_computer(bool p);
 int pocket_id(int p1, int p2);
 GameState generate_random_initial_state();

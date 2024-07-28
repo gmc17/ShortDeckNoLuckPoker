@@ -55,23 +55,23 @@ int main() {
 
     extern ARSTable ars_table;
 
-    for (int i=0; i<10; i++) {
-    	GameState random = generate_random_initial_state();
-    	// random.apply_action(1);
-    	// random.apply_chance_action(32);
-    	// random.apply_chance_action(31);
-    	// random.apply_chance_action(30);
+    // for (int i=0; i<10; i++) {
+    // 	GameState random = generate_random_initial_state();
+    // 	// random.apply_action(1);
+    // 	// random.apply_chance_action(32);
+    // 	// random.apply_chance_action(31);
+    // 	// random.apply_chance_action(30);
 
-	    std::cout << "Board:\n" << random.to_string() << "\nInformation set:\n";
+	//     std::cout << "Board:\n" << random.to_string() << "\nInformation set:\n";
 	    
-	    InfoSet is = random.to_information_set();
+	//     InfoSet is = random.to_information_set();
 
-	    std::cout << is.to_string() << "\n";
-    }
+	//     std::cout << is.to_string() << "\n";
+    // }
 
-    std::cout << "1\n";
+    // std::cout << "1\n";
 
-    std::cout << ars_table(0, 3987, 71) << "\n";
+    // std::cout << ars_table(0, 3987, 71) << "\n";
 
     
 	// for (int r=0; r<50; r++) {
@@ -101,32 +101,9 @@ int main() {
 	//     } 
 	// }
 
-    //mccfr(100000);
+    // mccfr(100000);
 
     as_mccfr(100000);
 
-    // print_nonzero_strategy(100, "as_latest_checkpoint.dat");
-
-    // std::unordered_map<GameState, std::array<float, 3>, GameStateHash> strategy_map;
-
-	// std::array<float, 3> strategy = {0.5f, 0.3f, 0.2f};
-
-	// // Insert into the unordered_map
-	// strategy_map[gs] = strategy;
-
-	// // Retrieve from the unordered_map
-	// auto it = strategy_map.find(gs);
-	// if (it != strategy_map.end()) {
-	//     std::array<float, 3> retrieved_strategy = it->second;
-	//     std::cout << "hash: " << it->first.to_string() << "\n";
-	// }
+    play_computer(0);
 }
-
-
-
-	/**
-	 * AA
-	 * 
-	 * 
-	 * 
-	 */ 
