@@ -53,46 +53,25 @@ int main() {
 	//     //std::cout << random.rivr_hand_strength() << "\n\n";
     // }
 
-    // for (int i=0; i<10; i++) {
-    // 	GameState random = generate_random_initial_state();
-	//     std::cout << random.to_string();
-	//     std::cout << "sb p_id: " << random.p_id(0) << "\n";
-	//     std::cout << "bb p_id: " << random.p_id(1) << "\n\n";
+    extern ARSTable ars_table;
 
-	//     //std::cout << random.to_string();
-	//     //std::cout << random.rivr_hand_strength() << "\n\n";
-    // }
+    for (int i=0; i<10; i++) {
+    	GameState random = generate_random_initial_state();
+    	// random.apply_action(1);
+    	// random.apply_chance_action(32);
+    	// random.apply_chance_action(31);
+    	// random.apply_chance_action(30);
 
-    ars_table.load_from_file("ars_table_final.dat");
+	    std::cout << "Board:\n" << random.to_string() << "\nInformation set:\n";
+	    
+	    InfoSet is = random.to_information_set();
 
-    std::cout << ars_table(0, 2987, 81) << "\n";
+	    std::cout << is.to_string() << "\n";
+    }
 
-    // for (int r=0; r<9900; r++) {
-    // 	for (int p_id=0; p_id<81; p_id++) {
-    // 		ars_table(0, r, p_id) = 0.0f;
-    // 		count_table(0, r, p_id) = 0.0f;
-    // 	}
-    // }
+    std::cout << "1\n";
 
-    // ars_table.save_to_file("ars_table.dat");
-    // count_table.save_to_file("count_table.dat");
-
-    // generate_ARS_tables();
-
-    // ars_table.load_from_file("ars_table.dat");
-    // count_table.load_from_file("count_table.dat");
-
-    // for (int r=0; r<9900; r++) {
-    // 	for (int p_id=0; p_id<81; p_id++) {
-    // 		if (count_table(0, r, p_id) > 0.5f) {
-    // 			float hand_strength = ars_table(0, r, p_id) / count_table(0, r, p_id);
-    // 			ars_table(0, r, p_id) = hand_strength;
-    // 		}
-    // 	}
-    // }
-
-	// ars_table.save_to_file("ars_table.dat");
-    // count_table.save_to_file("count_table.dat");
+    std::cout << ars_table(0, 3987, 71) << "\n";
 
     
 	// for (int r=0; r<50; r++) {
@@ -124,7 +103,7 @@ int main() {
 
     //mccfr(100000);
 
-    // as_mccfr(120000);
+    as_mccfr(100000);
 
     // print_nonzero_strategy(100, "as_latest_checkpoint.dat");
 

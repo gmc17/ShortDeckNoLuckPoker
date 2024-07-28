@@ -2,7 +2,13 @@
 #include "game_state.h"
 #include "constants.h"
 
-ARSTable::ARSTable(): data(NUM_ROUNDS * NUM_RANKS * NUM_POCKET_PAIRS, 0.0f) {}
+ARSTable::ARSTable() : data(NUM_RANKS * NUM_ROUNDS * NUM_POCKET_PAIRS, 0.0f) {
+    try {
+        load_from_file("ars_table_final.dat");
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+}
 
 float& ARSTable::operator()(int round, int rank, int pocket_pair_id) {
     return data[round * NUM_RANKS * NUM_POCKET_PAIRS + rank * NUM_POCKET_PAIRS + pocket_pair_id];

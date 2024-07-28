@@ -11,7 +11,6 @@
 #include <bitset>
 #include <random>
 #include <cstdint>
-#include <sstream>
 #include <unordered_map>
 
 #include "info_set.h"

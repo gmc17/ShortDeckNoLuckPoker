@@ -80,8 +80,8 @@ int sample_action(std::array<float, 3> strategy) {
     return 0;
 }
 
-std::array<float, 3> get_strategy(const GameState& info_set) {
-    size_t hash = hash_gamestate(info_set);
+std::array<float, 3> get_strategy(const InfoSet& info_set) {
+    size_t hash = info_set.hash();
 
     std::array<float, 3> regrets = regret_sum[hash];
     std::array<float, 3> strategy = {0.0f, 0.0f, 0.0f};
@@ -111,8 +111,8 @@ std::array<float, 3> get_strategy(const GameState& info_set) {
     return strategy;
 }
 
-std::array<float, 3> get_average_strategy(const GameState& info_set) {
-    size_t hash = hash_gamestate(info_set);
+std::array<float, 3> get_average_strategy(const InfoSet& info_set) {
+    size_t hash = info_set.hash();
 
     std::array<float, 3> sum = strategy_sum[hash];
     int actions = info_set.num_actions();
@@ -131,171 +131,171 @@ std::array<float, 3> get_average_strategy(const GameState& info_set) {
     return sum;
 }
 
-float traverse_tree(GameState gs, bool active_player, float p0, float p1) {
-    // Terminal
-    if (gs.is_terminal()) {
-        // std::cout << gs.to_string();
-        // std::cout << "Utility to player " << active_player << ": " << gs.utility(active_player) << "\n\n";
-        return gs.utility(active_player);
-    }
+// float traverse_tree(GameState gs, bool active_player, float p0, float p1) {
+//     // Terminal
+//     if (gs.is_terminal()) {
+//         // std::cout << gs.to_string();
+//         // std::cout << "Utility to player " << active_player << ": " << gs.utility(active_player) << "\n\n";
+//         return gs.utility(active_player);
+//     }
 
-    // Chance
-    if (gs.is_chance()) {
-        float util = 0;
-        for (int i=0; i<NUM_CHANCE_SAMPLES; i++) {
-            int actions = gs.num_chance_actions();
-            GameState temp = gs;
-            temp.apply_chance_action(actions);
-            util += traverse_tree(temp, active_player, p0 * (1.0f/actions), p1 * (1.0f/actions));
-        }
-        return util / NUM_CHANCE_SAMPLES;
-    }
+//     // Chance
+//     if (gs.is_chance()) {
+//         float util = 0;
+//         for (int i=0; i<NUM_CHANCE_SAMPLES; i++) {
+//             int actions = gs.num_chance_actions();
+//             GameState temp = gs;
+//             temp.apply_chance_action(actions);
+//             util += traverse_tree(temp, active_player, p0 * (1.0f/actions), p1 * (1.0f/actions));
+//         }
+//         return util / NUM_CHANCE_SAMPLES;
+//     }
 
-    GameState info_set = gs;
-    info_set.to_information_set();
-    int actions;
-    size_t hash = hash_gamestate(info_set);
+//     GameState info_set = gs;
+//     info_set.to_information_set();
+//     int actions;
+//     size_t hash = hash_gamestate(info_set);
 
-    try {
-        actions = info_set.num_actions();
-    } catch (const std::invalid_argument& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
+//     try {
+//         actions = info_set.num_actions();
+//     } catch (const std::invalid_argument& e) {
+//         std::cerr << "Error: " << e.what() << std::endl;
+//     }
 
-    if (info_set.player==active_player) {
-        std::array<float, 3> util = {0.0f, 0.0f, 0.0f};
-        float node_util = 0;
-        std::array<float, 3> strategy = get_strategy(info_set);
+//     if (info_set.player==active_player) {
+//         std::array<float, 3> util = {0.0f, 0.0f, 0.0f};
+//         float node_util = 0;
+//         std::array<float, 3> strategy = get_strategy(info_set);
         
-        for (int i=0; i<actions; i++) {
-            GameState temp = gs;
-            temp.apply_action(i);
-            float child_util = (active_player == 0) 
-                             ? traverse_tree(temp, active_player, p0 * strategy[i], p1) 
-                             : traverse_tree(temp, active_player, p0, p1 * strategy[i]);
-            util[i] = child_util;
-            node_util += strategy[i] * child_util;
-        }
+//         for (int i=0; i<actions; i++) {
+//             GameState temp = gs;
+//             temp.apply_action(i);
+//             float child_util = (active_player == 0) 
+//                              ? traverse_tree(temp, active_player, p0 * strategy[i], p1) 
+//                              : traverse_tree(temp, active_player, p0, p1 * strategy[i]);
+//             util[i] = child_util;
+//             node_util += strategy[i] * child_util;
+//         }
 
-        for (int i=0; i<actions; i++) {
+//         for (int i=0; i<actions; i++) {
 
-            regret_sum[hash][i] += (active_player == 0)
-                                     ? (util[i] - node_util) * p1
-                                     : (util[i] - node_util) * p0;
+//             regret_sum[hash][i] += (active_player == 0)
+//                                      ? (util[i] - node_util) * p1
+//                                      : (util[i] - node_util) * p0;
             
-            strategy_sum[hash][i] += (active_player == 0)
-                                       ? strategy[i] * p0
-                                       : strategy[i] * p1;
-        }
+//             strategy_sum[hash][i] += (active_player == 0)
+//                                        ? strategy[i] * p0
+//                                        : strategy[i] * p1;
+//         }
 
-        return node_util;
+//         return node_util;
 
-    } else if (info_set.player != active_player) {
-        std::array<float, 3> strategy = get_strategy(info_set);
-        int sampled_action = sample_action(strategy);
-        GameState temp = gs;
-        temp.apply_action(sampled_action);
+//     } else if (info_set.player != active_player) {
+//         std::array<float, 3> strategy = get_strategy(info_set);
+//         int sampled_action = sample_action(strategy);
+//         GameState temp = gs;
+//         temp.apply_action(sampled_action);
 
-        float util = (active_player == 0) 
-             ? traverse_tree(temp, active_player, p0, p1 * strategy[sampled_action]) 
-             : traverse_tree(temp, active_player, p0 * strategy[sampled_action], p1) ;
+//         float util = (active_player == 0) 
+//              ? traverse_tree(temp, active_player, p0, p1 * strategy[sampled_action]) 
+//              : traverse_tree(temp, active_player, p0 * strategy[sampled_action], p1) ;
 
-        for (int i=0; i<actions; i++) {
-            strategy_sum[hash][i] += (active_player == 0)
-                                       ? strategy[i] * p0
-                                       : strategy[i] * p1;
-        }
+//         for (int i=0; i<actions; i++) {
+//             strategy_sum[hash][i] += (active_player == 0)
+//                                        ? strategy[i] * p0
+//                                        : strategy[i] * p1;
+//         }
 
-        return util;
-    }
+//         return util;
+//     }
 
-    return 0.0f;
-}
+//     return 0.0f;
+// }
 
-float mccfr(int iterations) {
-    float util[2] = {0, 0};
+// float mccfr(int iterations) {
+//     float util[2] = {0, 0};
 
-    // Initialize all elements to {0.0f, 0.0f, 0.0f}
-    std::array<float, 3> init = {0.0f, 0.0f, 0.0f};
-    for (int i=0; i<STRATEGY_ARRAY_SIZE; i++) {
-        strategy_sum[i] = init;
-        regret_sum[i] = init;
-    }
+//     // Initialize all elements to {0.0f, 0.0f, 0.0f}
+//     std::array<float, 3> init = {0.0f, 0.0f, 0.0f};
+//     for (int i=0; i<STRATEGY_ARRAY_SIZE; i++) {
+//         strategy_sum[i] = init;
+//         regret_sum[i] = init;
+//     }
 
-    try {
-        load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
+//     try {
+//         load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+//     } catch (const std::runtime_error& e) {
+//         std::cerr << "Error: " << e.what() << std::endl;
+//     }
 
-    for (int t=0; t<iterations; t++) {
-        for (int player=0; player<2; player++) {
-            GameState gs = generate_random_initial_state();
-            if (player==0) util[0] += traverse_tree(gs, player, 1, 1);
+//     for (int t=0; t<iterations; t++) {
+//         for (int player=0; player<2; player++) {
+//             GameState gs = generate_random_initial_state();
+//             if (player==0) util[0] += traverse_tree(gs, player, 1, 1);
     
-            if (player==1) {
-                GameState info_set = gs;
-                info_set.to_information_set();
+//             if (player==1) {
+//                 GameState info_set = gs;
+//                 info_set.to_information_set();
                 
-                float preflop_call_odds = get_strategy(info_set)[1];
-                gs.apply_action(1);
+//                 float preflop_call_odds = get_strategy(info_set)[1];
+//                 gs.apply_action(1);
 
-                gs.apply_chance_action(32);
-                gs.apply_chance_action(31);
-                gs.apply_chance_action(30);
+//                 gs.apply_chance_action(32);
+//                 gs.apply_chance_action(31);
+//                 gs.apply_chance_action(30);
 
-                info_set = gs;
-                info_set.to_information_set();
+//                 info_set = gs;
+//                 info_set.to_information_set();
 
-                int sampled_action = sample_action(get_strategy(info_set));
-                gs.apply_action(sampled_action);
+//                 int sampled_action = sample_action(get_strategy(info_set));
+//                 gs.apply_action(sampled_action);
 
-                util[1] += traverse_tree(gs, player, preflop_call_odds * get_strategy(info_set)[sampled_action], 1);
-            }
-        }
-        if (t%1000==0) {
-            std::cout << "Iteration i=" << t << ": " << util[0]/iterations << " (utility to SB)\n";
-            std::cout << "                 " << util[1]/iterations << " (utility to BB)\n";
-        }
+//                 util[1] += traverse_tree(gs, player, preflop_call_odds * get_strategy(info_set)[sampled_action], 1);
+//             }
+//         }
+//         if (t%1000==0) {
+//             std::cout << "Iteration i=" << t << ": " << util[0]/iterations << " (utility to SB)\n";
+//             std::cout << "                 " << util[1]/iterations << " (utility to BB)\n";
+//         }
 
-        if ((t+1)%2500==0) {
-            std::ostringstream filename;
-            filename << "latest_checkpoint.dat";
-            save_cfr_data(filename.str(), regret_sum, strategy_sum);
-        }
-    }
+//         if ((t+1)%2500==0) {
+//             std::ostringstream filename;
+//             filename << "latest_checkpoint.dat";
+//             save_cfr_data(filename.str(), regret_sum, strategy_sum);
+//         }
+//     }
 
 
-    for (int i=0; i<2; i++) {
+//     for (int i=0; i<2; i++) {
 
-        std::cout << "Sample game #" << i+1 << "\n";
+//         std::cout << "Sample game #" << i+1 << "\n";
 
-        GameState gs = generate_random_initial_state();
+//         GameState gs = generate_random_initial_state();
 
-        while (!gs.is_terminal()) {
-            if (gs.is_chance()) {
-                gs.apply_chance_action(gs.num_chance_actions());
-            }
+//         while (!gs.is_terminal()) {
+//             if (gs.is_chance()) {
+//                 gs.apply_chance_action(gs.num_chance_actions());
+//             }
 
-            else {
-                GameState info_set = gs;
-                info_set.to_information_set();
-                std::array<float, 3> strategy = get_average_strategy(info_set);
+//             else {
+//                 GameState info_set = gs;
+//                 info_set.to_information_set();
+//                 std::array<float, 3> strategy = get_average_strategy(info_set);
 
-                std::cout << gs.to_string();
-                std::cout << "Strategy: " << strategy << "\n";
+//                 std::cout << gs.to_string();
+//                 std::cout << "Strategy: " << strategy << "\n";
 
-                int sampled_action = sample_action(strategy);
-                std::cout << "Sampled action: " << sampled_action << "\n\n";
+//                 int sampled_action = sample_action(strategy);
+//                 std::cout << "Sampled action: " << sampled_action << "\n\n";
 
-                gs.apply_action(sampled_action);
-            }
-        }
-        std::cout << "Sample game #" << i+1 << " over.\n";
-    }
+//                 gs.apply_action(sampled_action);
+//             }
+//         }
+//         std::cout << "Sample game #" << i+1 << " over.\n";
+//     }
 
-    return util[0] / iterations;
-}
+//     return util[0] / iterations;
+// }
 
 void print_nonzero_strategy(int n, std::string filename) {
 
@@ -318,15 +318,15 @@ void print_nonzero_strategy(int n, std::string filename) {
         // gs.apply_action(1);
         // gs.apply_action(2);
 
-        gs.to_information_set();
+        InfoSet info_set = gs.to_information_set();
 
-        std::array<float, 3> strategy = get_strategy(gs);
+        std::array<float, 3> strategy = get_strategy(info_set);
 
-        std::cout << gs.to_string();
+        std::cout << info_set.to_string();
         std::cout << "Strategy:         " << strategy << "\n";
-        std::cout << "Average strategy: " << get_average_strategy(gs) << "\n";
-        std::cout << "Strategy_sum:     " << strategy_sum[hash_gamestate(gs)] << "\n";
-        std::cout << "Regret_sum:       " << regret_sum[hash_gamestate(gs)] << "\n\n";
+        std::cout << "Average strategy: " << get_average_strategy(info_set) << "\n";
+        std::cout << "Strategy_sum:     " << strategy_sum[info_set.hash()] << "\n";
+        std::cout << "Regret_sum:       " << regret_sum[info_set.hash()] << "\n\n";
     }
 }
 
@@ -341,10 +341,9 @@ float as_traverse_tree(GameState gs, bool active_player, float q) {
         return as_traverse_tree(temp, active_player, q);
     }
 
-    GameState info_set = gs;
-    info_set.to_information_set();
+    InfoSet info_set = gs.to_information_set();
     int actions = info_set.num_actions();
-    size_t hash = hash_gamestate(info_set);
+    size_t hash = info_set.hash();
     std::array<float, 3> strategy = get_strategy(info_set);
 
     if (info_set.player != active_player) {
@@ -418,11 +417,11 @@ float as_mccfr(int iterations) {
         }
 
         if (t%20000==0) {
-            std::cout << "Iteration i=" << t << ": " << util[0]/iterations << " (utility to SB)\n";
-            std::cout << "                 " << util[1]/iterations << " (utility to BB)\n";
+            std::cout << "Iteration i=" << t << ": " << util[0]/t << " (utility to SB)\n";
+            std::cout << "                 " << util[1]/t << " (utility to BB)\n";
         }
 
-        if ((t+1)%100000==0) {
+        if ((t+1)%500000==0) {
             std::ostringstream filename;
             filename << "as_latest_checkpoint.dat";
             save_cfr_data(filename.str(), regret_sum, strategy_sum);
@@ -430,7 +429,7 @@ float as_mccfr(int iterations) {
     }
 
 
-    for (int i=0; i<2; i++) {
+    for (int i=0; i<5; i++) {
 
         std::cout << "Sample game #" << i+1 << "\n";
 
@@ -442,8 +441,7 @@ float as_mccfr(int iterations) {
             }
 
             else {
-                GameState info_set = gs;
-                info_set.to_information_set();
+                InfoSet info_set = gs.to_information_set();
                 std::array<float, 3> strategy = get_average_strategy(info_set);
 
                 std::cout << gs.to_string();
@@ -451,6 +449,8 @@ float as_mccfr(int iterations) {
 
                 int sampled_action = sample_action(strategy);
                 std::cout << "Sampled action: " << sampled_action << "\n\n";
+
+                std::cout << "As information set:\n" << info_set.to_string() << "\n";
 
                 gs.apply_action(sampled_action);
             }

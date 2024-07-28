@@ -23,5 +23,3 @@ void ars_worker_exhaustive_flop(int start, int thread_id, ARSTable& ars_table, A
 void ars_worker_exhaustive_turn(int start, int thread_id, ARSTable& ars_table, ARSTable& cum_sum_table, ARSTable& count_table);
 void ars_worker_exhaustive_river(int start, int thread_id, ARSTable& ars_table, ARSTable& cum_sum_table, ARSTable& count_table);
 void generate_ARS_tables();
-
-extern ARSTable ars_table;

@@ -5,11 +5,16 @@
 
 //****************************** CFR Parameters ******************************//
 static const size_t STRATEGY_ARRAY_SIZE = 10000007;
-const int NUM_CHANCE_SAMPLES = 3;
-const float EPSILON = 0.05;
-const float TAU = 1000;
-const float BETA = 1000000;
-
+static const int NUM_CHANCE_SAMPLES = 3;
+static const float EPSILON = 0.05;
+static const float TAU = 1000;
+static const float BETA = 1000000;
+static const uint8_t FLOP_BUCKETS = 12;
+static const uint8_t TURN_BUCKETS = 12;
+static const uint8_t RIVR_BUCKETS = 10;
+static const std::array<float, FLOP_BUCKETS> FLOP_BUCKETS_arr = {0.2f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.8f, 0.9f};
+static const std::array<float, TURN_BUCKETS> TURN_BUCKETS_arr = {0.2f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.8f, 0.9f};
+static const std::array<float, RIVR_BUCKETS> RIVR_BUCKETS_arr = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
 
 //****************************** Utility Constants ******************************//
 static const size_t NUM_ROUNDS = 3;

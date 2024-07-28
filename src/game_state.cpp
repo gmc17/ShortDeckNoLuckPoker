@@ -34,7 +34,6 @@ std::string GameState::to_string() const {
 
     std::array<uint32_t, 4> suits = {suita, suitb, suitc, suitd};
     
-    
     // Small blind cards
     ss << "SB cards:   ";
 
@@ -931,22 +930,62 @@ void GameState::apply_chance_action(int actions) {
     }
 }
 
+uint8_t ars_to_bucket_flop(float ars) {
+    uint8_t i=0;
+    while ((i<FLOP_BUCKETS) && FLOP_BUCKETS_arr[i]<ars) {
+        i++;
+    }
+    return i;
+}
+
+uint8_t ars_to_bucket_turn(float ars) {
+    uint8_t i=0;
+    while ((i<TURN_BUCKETS) && TURN_BUCKETS_arr[i]<ars) {
+        i++;
+    }
+    return i;
+}
+
+uint8_t ars_to_bucket_rivr(float ars) {
+    uint8_t i=0;
+    while ((i<RIVR_BUCKETS) && RIVR_BUCKETS_arr[i]<ars) {
+        i++;
+    }
+    return i;
+}
+
 InfoSet GameState::to_information_set() {
-    // Mask out other player's cards
-    uint32_t mask = (player == 0) ? 0b111111111000000000111111111 : 
-                                    0b111111111111111111000000000;
-    suita &= mask;
-    suitb &= mask;
-    suitc &= mask;
-    suitd &= mask;
-
     int p = p_id(player);
-    int rank = best_hand(player);  
-    float ars_score = 0.5;
 
-    if (turn_history%2==0) ars_score = ars_table(0, rank, p);
-    else if (rivr_history%2==0) ars_score = ars_table(1, rank, p);
-    else if (rivr_history%2==1) ars_score = ars_table(2, rank, p); 
+    uint8_t rivr_history_temp = rivr_history;
+    uint8_t turn_history_temp = turn_history;
+    rivr_history = 0;
+    turn_history = 0;
+    int flop_rank = best_hand(player)/100;
+
+    turn_history = turn_history_temp;
+    int turn_rank = best_hand(player)/100;
+
+    rivr_history = rivr_history_temp;
+    int rivr_rank = best_hand(player)/100;
+
+    int flop_bucket = -1;
+    int turn_bucket = -1;
+    int rivr_bucket = -1;
+
+    if (flop_history%2==1) flop_bucket = ars_to_bucket_flop(ars_table(0, flop_rank, p));
+    if (turn_history%2==1) turn_bucket = ars_to_bucket_turn(ars_table(1, turn_rank, p));
+    if (rivr_history%2==1) rivr_bucket = ars_to_bucket_rivr(ars_table(2, rivr_rank, p));
+
+    return InfoSet(p,
+                   call_preflop,
+                   flop_history, 
+                   turn_history, 
+                   rivr_history,
+                   flop_bucket,
+                   turn_bucket,
+                   rivr_bucket,
+                   player);
 }
 
 float GameState::rivr_hand_strength() {
