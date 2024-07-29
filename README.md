@@ -21,10 +21,6 @@ After building, run the main executable:
 
 _____
 
-## License
-
-This project is licensed under MIT License. See the LICENSE file for details.
-
 ## Authors
 
 [Glen Cahilly](https://github.com/gmc17)
