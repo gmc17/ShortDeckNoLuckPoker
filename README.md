@@ -4,6 +4,6 @@ ShortDeckNoLuckPoker is an implementation of Average Sampling Monte Carlo Counte
 
 ## Project Overview
 
-This project aims to develop an AI agent capable of playing Short Deck Poker using advanced reinforcement learning techniques. It utilizes the AS-MCCFR algorithm to compute approximate Nash equilibrium strategies.
+This project utilizes the AS-MCCFR algorithm to compute Nash equilibrium strategies for Shortdeck Heads-up Poker.
 
 ## File Structure
