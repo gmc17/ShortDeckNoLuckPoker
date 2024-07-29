@@ -2,11 +2,11 @@
 
 # ShortDeckNoLuckPoker
 
-An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimization (AS-MCCFR) for Short Deck Poker.
+An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimization (AS-MCCFR) for shortdeck Poker.
 
 ## Project Overview
 
-This project utilizes the AS-MCCFR algorithm to compute Nash equilibrium strategies for Shortdeck Heads-up Poker.
+This project utilizes the AS-MCCFR algorithm to compute Nash equilibrium strategies for shortdeck Heads-up Poker.
 
 ## Building the Project
 To build the project, use the provided Makefile:
