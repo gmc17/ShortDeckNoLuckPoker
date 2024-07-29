@@ -6,7 +6,7 @@ An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimiza
 
 ## Project Overview
 
-This project utilizes the AS-MCCFR algorithm to compute Nash equilibrium strategies for shortdeck Heads-up Poker.
+This project utilizes the AS-MCCFR algorithm to compute game theory optimal (GTO) strategies for shortdeck Heads-up Poker.
 
 ## Building the Project
 To build the project, use the provided Makefile:
