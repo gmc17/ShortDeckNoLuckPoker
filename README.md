@@ -28,3 +28,6 @@ After building, run the main executable:
 ## Acknowledgments
 
 [Efficient Monte Carlo Counterfactual Regret Minimization in Games with Many Player Actions](https://proceedings.neurips.cc/paper_files/paper/2012/file/3df1d4b96d8976ff5986393e8767f5b2-Paper.pdf)
+
+[Speeding-Up Poker Game Abstraction Computation:
+Average Rank Strength ](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf)
