@@ -1,4 +1,7 @@
 # ShortDeckNoLuckPoker
+![Release](https://img.shields.io/badge/release-v0.2.0-blue)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+
 An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimization (AS-MCCFR) for short deck Texas Hold'em poker.
 
 ## Project Description
