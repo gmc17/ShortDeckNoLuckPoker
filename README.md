@@ -27,7 +27,7 @@ You will be prompted to input actions during gameplay. Enter an integer from 1-7
 | 7     | Call                      |
 
 ## Range Generation
-The program can generate optimal ranges for any position in the game. Here's an example of a Small Blind preflop fold range:
+The program can generate output its ranges for any position/action in the game. For example, here is its SB preflop fold range:
 
 ![SB Preflop Fold Range](sb_preflop_fold_range.png)
 
