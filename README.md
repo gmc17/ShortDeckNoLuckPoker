@@ -6,7 +6,7 @@ An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimiza
 
 This project utilizes the AS-MCCFR algorithm to compute game theory optimal (GTO) strategies for shortdeck Heads-up Poker.
 
-## Running the Program
+## Playing the computer
 
 Currently, only terminal usage is supported. Run 'make run' to play against the computer. You will be prompted to input an action. This should be an integer from 1-7, inclusive.
 
