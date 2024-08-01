@@ -1,6 +1,6 @@
 # ShortDeckNoLuckPoker
 ![Release](https://img.shields.io/badge/release-v0.0.1-blue)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![license](https://img.shields.io/github/license/gmc17/ShortDeckNoLuckPoker?style=flat-square)](https://github.com/gmc17/ShortDeckNoLuckPoker/blob/master/LICENSE)
 
 ## Project Description
 This project implements the AS-MCCFR algorithm to compute Game Theory Optimal (GTO) strategies for heads-up Short Deck Poker. It aims to provide a free, open-source tool for strategy analysis in this increasingly popular poker variant.
