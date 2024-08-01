@@ -42,8 +42,8 @@ make
 ```
 
 ## Requirements
-C++ compiler with C++11 support
-Make
+* C++ compiler with C++20 support
+* Make
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
