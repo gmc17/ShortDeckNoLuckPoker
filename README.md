@@ -1,25 +1,14 @@
-** work in progress **
-
 # ShortDeckNoLuckPoker
 
-An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimization (AS-MCCFR) for shortdeck Poker.
+An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimization (AS-MCCFR) for short deck texas hold-em.
 
-## Project Overview
+## Introduction
 
 This project utilizes the AS-MCCFR algorithm to compute game theory optimal (GTO) strategies for shortdeck Heads-up Poker.
 
-## Building the Project
-To build the project, use the provided Makefile:
-make run
-
 ## Running the Program
 
-After building, run the main executable:
-./main
-
-## Results
-
-(in progress)
+Currently, only terminal usage is supported. Run 'make run' to play against the computer.
 
 ## Authors
 
