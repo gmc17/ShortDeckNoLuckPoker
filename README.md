@@ -11,13 +11,13 @@ This project utilizes the AS-MCCFR algorithm to compute game theory optimal (GTO
 Currently, only terminal usage is supported. Run 'make run' to play against the computer. You will be prompted to input an action. This should be an integer from 1-7, inclusive.
 
 Actions:
- 1: Fold / Check
- 2: Bet 0.50x pot / Raise 2.00x
- 3: Bet 0.75x pot / Raise 2.75x
- 4: Bet 1.00x pot / Raise 3.50x
- 5: Bet 2.00x pot / Raise 5.00x
- 6: All-in
- 7: Call
+1. Fold / Check
+2. Bet 0.50x pot / Raise 2.00x
+3. Bet 0.75x pot / Raise 2.75x
+4. Bet 1.00x pot / Raise 3.50x
+5. Bet 2.00x pot / Raise 5.00x
+6. All-in
+7. Call
 
 ## Authors
 
