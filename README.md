@@ -2,8 +2,6 @@
 ![Release](https://img.shields.io/badge/release-v0.0.1-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-An implementation of Average Sampling Monte Carlo Counterfactual Regret Minimization (AS-MCCFR) for short deck Texas Hold'em poker.
-
 ## Project Description
 This project implements the AS-MCCFR algorithm to compute Game Theory Optimal (GTO) strategies for heads-up Short Deck Poker. It aims to provide a robust poker AI and a tool for strategy analysis in this increasingly popular poker variant.
 
