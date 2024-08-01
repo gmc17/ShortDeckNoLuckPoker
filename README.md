@@ -41,6 +41,21 @@ cd ShortDeckNoLuckPoker
 make
 ```
 
+### Important: Average Rank Strength (ARS) Table
+
+This project requires a precomputed Average Rank Strength (ARS) table to function correctly. You have two options:
+
+1. **Download the pre-generated `ars_table.dat` file (Recommended)**
+   - This is the faster and easier option.
+   - Place the downloaded file in the project's root directory.
+
+2. **Generate the ARS table yourself**
+   - Run `generate_ars_tables()`.
+   - This will create `ars_table.dat` in the current directory.
+   - Not recommended, as this process is time-consuming.
+
+**Note:** Ensure you complete one of these steps before running the solver. The pre-generated file is recommended for most users to save time and computational resources.
+
 ## Requirements
 * C++ compiler with C++20 support
 * Make
