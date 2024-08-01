@@ -19,6 +19,11 @@ Actions:
 6. All-in
 7. Call
 
+## Generated ranges
+![SB Preflop Fold Range](sb_preflop_fold_range.png)
+
+The program can generate ranges for any position. Work is being done to make this more user-friendly, but currently you can use the GameState::print_range() function to do so.
+
 ## Authors
 
 [Glen Cahilly](https://github.com/gmc17)
