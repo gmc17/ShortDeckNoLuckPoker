@@ -117,21 +117,43 @@ int main() {
 
     // play_computer();
 
-	std::array<std::array<float, 36>, 36> opponent_range;
-    for (int r=0; r<1296; r++) {
-    	opponent_range[r/36][r%36] = 1.0f / (36.0f * 35.0f);
-    }
+	load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+
+	
 
 
-	for (int i=0; i<5; i++) {
-		GameState gs = generate_random_initial_state();
-		gs.apply_index(gs.action_to_index(7)); // call
-		gs.apply_index(gs.action_to_index(1)); // check
-		gs.apply_chance_action(32);
-		gs.apply_chance_action(31);
-		gs.apply_chance_action(30);
-		std::cout << gs.to_string() << "\n" << win_probability_rollout(gs, 1, opponent_range, 1000) << "\n\n";
-	}
+	// for (int i=0; i<5; i++) {
+
+	// 	std::array<std::array<float, 36>, 36> range;
+	//     for (int r=0; r<36; r++) {
+	//     	for (int c=0; c<36; c++) {
+	//     		range[r][c] = (r==c) ? 0.0f : 1.0f / (36.0f * 35.0f);
+	//     	}	
+	//     }
+
+	// 	GameState gs = generate_random_initial_state();
+	// 	gs.apply_index(gs.action_to_index(7)); // call
+	// 	print_opponent_range(range);
+	// 	range = update_range(gs, 0, 0, range);
+	// 	print_opponent_range(range);
+	// 	gs.apply_index(gs.action_to_index(1)); // check
+	// 	gs.apply_chance_action(32);
+	// 	gs.apply_chance_action(31);
+	// 	gs.apply_chance_action(30);
+	// 	gs.apply_index(gs.action_to_index(1)); // check
+	// 	range = update_range(gs, 3, 0, range);
+	// 	print_opponent_range(range);
+	// 	gs.apply_index(gs.action_to_index(4)); // bet pot
+	// 	std::cout << "player: " << gs.player << "\n";
+	// 	int lbr = local_best_response(gs, 0, range);
+
+	// 	std::cout << gs.to_string() << "lbr index: " << lbr << "\n\n";
+	// }
+
+	int iterations = 1000;
+	float approx_exploitability = calculate_exploitability(iterations);
+
+	std::cout << "Average exploitability over " << iterations << " iterations: " << approx_exploitability << "\n"; 
 
     return 0;
 }
