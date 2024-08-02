@@ -50,4 +50,4 @@ quick: $(QUICK)
 	./$(QUICK)
 
 clean:
-	rm -f $(MAIN) $(TEST) $(DEBUG) $(PROFILE) $(QUICK) *.profraw *.profdata gmon.out profile_output.txt
+	rm -f $(MAIN) $(TEST) $(DEBUG) $(PROFILE) $(QUICK) *.profraw *.profdata gmon.out profile_output.txt *.jar *.dSYM
