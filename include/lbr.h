@@ -10,4 +10,4 @@
 
 float calculate_exploitability(int iterations);
 float lbr_traverse_tree(GameState gs, bool active_player, float q);
-float win_probability_rollout(GameState gs, bool active_player, std::array<float, 81> opponent_range);
+float win_probability_rollout(GameState gs, bool exploitative_player, const std::array<std::array<float, 36>, 36>& opponent_range, int samples);

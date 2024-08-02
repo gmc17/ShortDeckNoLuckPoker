@@ -100,15 +100,15 @@ int main() {
 
 	// sample_games(5);
 
-	GameState gs;
-	gs.print_range(6);
-	gs.apply_index(gs.action_to_index(6)); // call preflop
-	gs.print_range(7);
-	gs.apply_index(gs.action_to_index(7)); // check
-    gs.apply_chance_action(32);
-    gs.apply_chance_action(31);
-    gs.apply_chance_action(30);
-    gs.print_range(2); // range of bet pot on flop
+	// GameState gs;
+	// gs.print_range(6);
+	// gs.apply_index(gs.action_to_index(6)); // call preflop
+	// gs.print_range(7);
+	// gs.apply_index(gs.action_to_index(7)); // check
+    // gs.apply_chance_action(32);
+    // gs.apply_chance_action(31);
+    // gs.apply_chance_action(30);
+    // gs.print_range(2); // range of bet pot on flop
 
 	// for (int i=1; i<8; i++) {
 	// 	GameState gs;
@@ -116,5 +116,22 @@ int main() {
 	// }
 
     // play_computer();
+
+	std::array<std::array<float, 36>, 36> opponent_range;
+    for (int r=0; r<1296; r++) {
+    	opponent_range[r/36][r%36] = 1.0f / (36.0f * 35.0f);
+    }
+
+
+	for (int i=0; i<5; i++) {
+		GameState gs = generate_random_initial_state();
+		gs.apply_index(gs.action_to_index(7)); // call
+		gs.apply_index(gs.action_to_index(1)); // check
+		gs.apply_chance_action(32);
+		gs.apply_chance_action(31);
+		gs.apply_chance_action(30);
+		std::cout << gs.to_string() << "\n" << win_probability_rollout(gs, 1, opponent_range, 1000) << "\n\n";
+	}
+
     return 0;
 }

@@ -990,21 +990,15 @@ float GameState::rivr_hand_strength() {
     uint16_t suitc_all = ((suitc>>18) | (suitc>>9) | suitc) & 0b111111111;
     uint16_t suitd_all = ((suitd>>18) | (suitd>>9) | suitd) & 0b111111111;
 
+    std::array<uint16_t, 4> suit_cards_all = {suita_all, suitb_all, suitc_all, suitd_all};
+
     int turn_rank = turn & 0b1111;
     int turn_suit = (turn>>4) & 0b11;
-    if (turn_suit == 0) suita_all |= (0b1<<turn_rank);
-    if (turn_suit == 0b1) suitb_all |= (0b1<<turn_rank);
-    if (turn_suit == 0b10) suitc_all |= (0b1<<turn_rank);
-    if (turn_suit == 0b11) suitd_all |= (0b1<<turn_rank);
+    suit_cards_all[turn_suit] |= (0b1<<turn_rank);
 
     int rivr_rank = rivr & 0b1111;
     int rivr_suit = (rivr>>4) & 0b11;
-    if (rivr_suit == 0) suita_all |= (0b1<<rivr_rank);
-    if (rivr_suit == 0b1) suitb_all |= (0b1<<rivr_rank);
-    if (rivr_suit == 0b10) suitc_all |= (0b1<<rivr_rank);
-    if (rivr_suit == 0b11) suitd_all |= (0b1<<rivr_rank);
-
-    std::array<uint16_t, 4> suit_cards_all = {suita_all, suitb_all, suitc_all, suitd_all};
+    suit_cards_all[rivr_suit] |= (0b1<<rivr_rank);
 
     for (int c1=0; c1<36; c1++) {
         for (int c2=c1+1; c2<36; c2++) {
@@ -1233,22 +1227,13 @@ void GameState::print_range(int action) const {
             temp.suitc = suit_cards[2];
             temp.suitd = suit_cards[3];
 
-            // std::cout << temp.to_string() << "\n";
-
             InfoSet is = temp.to_information_set();
+
+            std::cout << strategy_sum[is.hash()] << "\n";
 
             std::array<int, 2> row_col = pocket_id_to_row_col(temp.p_id(player));
             
             range[row_col[0]][row_col[1]] = get_average_strategy(is)[action_to_index(action)];
-            //     // suited
-            //     range[8-p2][8-p1] = get_average_strategy(is)[action_to_index(action)];
-            // } else {
-            //     // unsuited
-            //     if ((8-p1)>(17-p2)) range[8-p1][17-p2] = get_average_strategy(is)[action_to_index(action)];
-            //     else range[17-p2][8-p1] = get_average_strategy(is)[action_to_index(action)];
-            // }
-
-            // std::cout << is.to_string() << "Average strategy: " << get_average_strategy(is) << "\n";
         }
     }
 

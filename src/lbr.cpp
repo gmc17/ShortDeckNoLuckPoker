@@ -1,4 +1,4 @@
-// #include "lbr.h"
+#include "lbr.h"
 
 // float calculate_exploitability(int iterations, std::array<std::array<float, 7>, STRATEGY_ARRAY_SIZE> player_strategy_sum) {
 //     float total_winnings = 0;
@@ -52,7 +52,7 @@
 //     return best_value;
 // }
 
-// int local_best_response(GameState gs, bool active_player, std::array<float, 630> opponent_range) {
+// int local_best_response(GameState gs, bool active_player, std::array<std::array<float, 36>, 36> opponent_range) {
 //     float win_probability = win_probability_rollout(gs, active_player, opponent_range);
 //     float asked = 0; // fix this!!
 //     std::array<float, 3> action_utils = {0.0f, 0.0f, 0.0f};
@@ -98,83 +98,172 @@
 //     return 0;
 // }
 
-// float win_probability_rollout(GameState gs, bool active_player, std::array<std::array<float, 36>, 36> opponent_range) {
+float win_probability_rollout(GameState gs, bool exploitative_player, const std::array<std::array<float, 36>, 36>& opponent_range, int samples) {
+    GameState temp = gs;
+    float total_wp = 0.0f;
+    float total_weight = 0.0f;
 
-//     // mask out opponent's actual cards
-//     uint32_t mask = (active_player == 0) ? 0b111111111000000000111111111
-//                                          : 0b111111111111111111000000000;
+    for (int i = 0; i < samples; i++) {
+        gs = temp;
 
-//     gs.suita &= mask;
-//     gs.suitb &= mask;
-//     gs.suitc &= mask;
-//     gs.suitd &= mask;
+        // Mask out opponent's actual cards
+        uint32_t mask = (exploitative_player == 0) ? 0b111111111000000000111111111
+                                                   : 0b111111111111111111000000000;
+        gs.suita &= mask;
+        gs.suitb &= mask;
+        gs.suitc &= mask;
+        gs.suitd &= mask;
 
-//     for (int p1=0; p1<36; p1++) {
-//         for (int p2=0; (p2!=p1) && (p2<36); p2++) {
-            
+        // Deal remaining community cards if needed
+        if (!gs.flop_seen) gs.apply_chance_action(32), gs.apply_chance_action(31), gs.apply_chance_action(30);
+        if (!gs.turn_seen) gs.apply_chance_action(29);
+        if (!gs.rivr_seen) gs.apply_chance_action(28);
 
-//             if (!gs.flop_seen) {
-//                 gs.apply_chance_action(32);
-//                 gs.apply_chance_action(31);
-//                 gs.apply_chance_action(30);
-//             }
+        std::array<uint16_t, 4> suit_cards_all = {
+            (uint16_t)(((gs.suita >> 18) | (gs.suita >> 9) | gs.suita) & 0b111111111),
+            (uint16_t)(((gs.suitb >> 18) | (gs.suitb >> 9) | gs.suitb) & 0b111111111),
+            (uint16_t)(((gs.suitc >> 18) | (gs.suitc >> 9) | gs.suitc) & 0b111111111),
+            (uint16_t)(((gs.suitd >> 18) | (gs.suitd >> 9) | gs.suitd) & 0b111111111)
+        };
 
-//             if (!gs.turn_seen) {
-//                 gs.apply_chance_action(29);
-//             }
+        // Add turn and river cards to suit_cards_all
+        suit_cards_all[(gs.turn >> 4) & 0b11] |= (0b1 << (gs.turn & 0b1111));
+        suit_cards_all[(gs.rivr >> 4) & 0b11] |= (0b1 << (gs.rivr & 0b1111));
 
-//             if (!gs.rivr_seen) {
-//                 gs.apply_chance_action(28);
-//             }
+        float iteration_wp = 0.0f;
+        float iteration_weight = 0.0f;
 
-//             gs.flop_seen = true;
-//             gs.turn_seen = true;
-//             gs.rivr_seen = true;
+        for (int c1 = 0; c1 < 36; c1++) {
+            for (int c2 = 0; c2 < 36; c2++) {
+                if (c2 == c1) continue;
+                if ((suit_cards_all[c1/9] & SINGLE_MASKS[8-(c1%9)]) || 
+                    (suit_cards_all[c2/9] & SINGLE_MASKS[8-(c2%9)])) continue;
 
-//             int active_player_best_hand = gs.best_hand(0);
-//         }
-//     }
+                float hand_weight = opponent_range[c1][c2];
+                if (hand_weight == 0) continue;
+
+                std::array<uint32_t, 4> suit_cards = {gs.suita, gs.suitb, gs.suitc, gs.suitd};
+                suit_cards[c1/9] |= (exploitative_player) ? (0b1 << (c1%9)) : (0b1 << (9+(c1%9)));
+                suit_cards[c2/9] |= (exploitative_player) ? (0b1 << (c2%9)) : (0b1 << (9+(c2%9)));
+
+                gs.suita = suit_cards[0];
+                gs.suitb = suit_cards[1];
+                gs.suitc = suit_cards[2];
+                gs.suitd = suit_cards[3];
+
+                int exploitative_player_best = gs.best_hand(exploitative_player);
+                int opponent_best = gs.best_hand(!exploitative_player);
+
+                if (exploitative_player_best > opponent_best) {
+                    iteration_wp += hand_weight;
+                } else if (exploitative_player_best == opponent_best) {
+                    iteration_wp += 0.5f * hand_weight;
+                }
+
+                iteration_weight += hand_weight;
+
+                // Reset suits for next iteration
+                gs.suita = suit_cards[0] & mask;
+                gs.suitb = suit_cards[1] & mask;
+                gs.suitc = suit_cards[2] & mask;
+                gs.suitd = suit_cards[3] & mask;
+            }
+        }
+
+        if (iteration_weight > 0) {
+            total_wp += iteration_wp / iteration_weight;
+            total_weight += 1.0f;
+        }
+    }
+
+    return (total_weight > 0) ? total_wp / total_weight : 0.5f;
+}
+
+// float win_probability_rollout(GameState gs, bool exploitative_player, const std::array<std::array<float, 36>, 36>& strategy_range, int samples) {
+//     GameState temp = gs;
+//     float total_wp = 0.0f;
+//     float total_weight = 0.0f;
+
+//     for (int i = 0; i < samples; i++) {
+//         gs = temp;
+//         uint32_t mask = (exploitative_player == 0) ? 0b111111111000000000111111111
+//                                                    : 0b111111111111111111000000000;
+//         gs.suita &= mask;
+//         gs.suitb &= mask;
+//         gs.suitc &= mask;
+//         gs.suitd &= mask;
+
+//         // Deal remaining community cards if needed
+//         if (!gs.flop_seen) gs.apply_chance_action(32), gs.apply_chance_action(31), gs.apply_chance_action(30);
+//         if (!gs.turn_seen) gs.apply_chance_action(29);
+//         if (!gs.rivr_seen) gs.apply_chance_action(28);
+
+//         std::array<uint16_t, 4> suit_cards_all = {
+//             (uint16_t)(((gs.suita >> 18) | (gs.suita >> 9) | gs.suita) & 0b111111111),
+//             (uint16_t)(((gs.suitb >> 18) | (gs.suitb >> 9) | gs.suitb) & 0b111111111),
+//             (uint16_t)(((gs.suitc >> 18) | (gs.suitc >> 9) | gs.suitc) & 0b111111111),
+//             (uint16_t)(((gs.suitd >> 18) | (gs.suitd >> 9) | gs.suitd) & 0b111111111)
+//         };
+
+//         // Add turn and river cards to suit_cards_all
+//         suit_cards_all[(gs.turn >> 4) & 0b11] |= (0b1 << (gs.turn & 0b1111));
+//         suit_cards_all[(gs.rivr >> 4) & 0b11] |= (0b1 << (gs.rivr & 0b1111));
+
+//         float iteration_wp = 0.0f;
+//         float iteration_weight = 0.0f;
+//         int valid_combinations = 0;
+
+//         for (int c1 = 0; c1 < 36; c1++) {
+//             for (int c2 = 0; c2 < 36; c2++) {
+//                 if (c2 == c1) continue;
+//                 if ((suit_cards_all[c1/9] & SINGLE_MASKS[8-(c1%9)]) || 
+//                     (suit_cards_all[c2/9] & SINGLE_MASKS[8-(c2%9)])) continue;
+
+//                 float hand_weight = strategy_range[c1][c2];
+//                 if (hand_weight == 0) continue;
+
+//                 std::array<uint32_t, 4> suit_cards = {gs.suita, gs.suitb, gs.suitc, gs.suitd};
 
 
-//     for (int c1=0; c1<36; c1++) {
-//         for (int c2=c1+1; c2<36; c2++) {
-//             if ((c2!=c1) &&
-//                 (!((suit_cards_all[c1/9] & SINGLE_MASKS[8-(c1%9)])==SINGLE_MASKS[8-(c1%9)])) &&
-//                 (!((suit_cards_all[c2/9] & SINGLE_MASKS[8-(c2%9)])==SINGLE_MASKS[8-(c2%9)]))) {
+//                 suit_cards[c1/9] |= (exploitative_player) ? (0b1 << (c1%9)) : (0b1 << (9+(c1%9)));
+//                 suit_cards[c2/9] |= (exploitative_player) ? (0b1 << (c2%9)) : (0b1 << (9+(c2%9)));
 
-//                 std::array<uint32_t, 4> suit_cards = {suita, suitb, suitc, suitd};
-//                 uint32_t tempa = suita;
-//                 uint32_t tempb = suitb;
-//                 uint32_t tempc = suitc;
-//                 uint32_t tempd = suitd;
+//                 gs.suita = suit_cards[0];
+//                 gs.suitb = suit_cards[1];
+//                 gs.suitc = suit_cards[2];
+//                 gs.suitd = suit_cards[3];
 
-//                 suit_cards[c1/9] |= (0b1 << (9+(c1%9)));
-//                 suit_cards[c2/9] |= (0b1 << (9+(c2%9)));
-//                 turn_seen = true;
-//                 rivr_seen = true;
-                
-//                 suita = suit_cards[0];
-//                 suitb = suit_cards[1];
-//                 suitc = suit_cards[2];
-//                 suitd = suit_cards[3];
+//                 int exploitative_player_best = gs.best_hand(exploitative_player);
+//                 int opponent_best = gs.best_hand(!exploitative_player);
 
-//                 int player_best = best_hand(0);
-//                 int opponent_best = best_hand(1);
-
-//                 if (player_best > opponent_best) {
-//                     wins += 1.0f;   
-//                 } else if (player_best == opponent_best) {
-//                     wins += 0.5f;
+//                 if (exploitative_player_best > opponent_best) {
+//                     iteration_wp += hand_weight;
+//                 } else if (exploitative_player_best == opponent_best) {
+//                     iteration_wp += 0.5f * hand_weight;
 //                 }
 
-//                 total += 1;
+//                 iteration_weight += hand_weight;
+//                 valid_combinations++;
 
-//                 suita = tempa;
-//                 suitb = tempb;
-//                 suitc = tempc;
-//                 suitd = tempd;
+//                 // Reset suits for next iteration
+//                 gs.suita = suit_cards[0] & mask;
+//                 gs.suitb = suit_cards[1] & mask;
+//                 gs.suitc = suit_cards[2] & mask;
+//                 gs.suitd = suit_cards[3] & mask;
 //             }
 //         }
+
+//         if (iteration_weight > 0) {
+//             float sample_wp = iteration_wp / iteration_weight;
+//             total_wp += sample_wp;
+//             total_weight += 1.0f;
+//             std::cout << "Sample " << i << ": WP = " << sample_wp << ", Valid combinations: " << valid_combinations << std::endl;
+//         } else {
+//             std::cout << "Sample " << i << ": No valid combinations" << std::endl;
+//         }
 //     }
-    
+
+//     float final_wp = (total_weight > 0) ? total_wp / total_weight : 0.5f;
+//     std::cout << "Final WP: " << final_wp << ", Total weight: " << total_weight << std::endl;
+//     return final_wp;
 // }
