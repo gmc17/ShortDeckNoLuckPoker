@@ -6,6 +6,10 @@
 #include <array>
 #include <thread>
 #include <mutex>
+#include <random>
+
+#include "game_state.h"
+#include "constants.h"
 
 class ARSTable {
 private:
@@ -22,4 +26,13 @@ public:
 void ars_worker_exhaustive_flop(int start, int thread_id, ARSTable& ars_table, ARSTable& cum_sum_table, ARSTable& count_table);
 void ars_worker_exhaustive_turn(int start, int thread_id, ARSTable& ars_table, ARSTable& cum_sum_table, ARSTable& count_table);
 void ars_worker_exhaustive_river(int start, int thread_id, ARSTable& ars_table, ARSTable& cum_sum_table, ARSTable& count_table);
-void generate_ARS_tables();
+void generate_ars_tables();
+
+std::vector<float> calculate_flop_bucket_boundaries();
+std::vector<float> calculate_turn_bucket_boundaries();
+std::vector<float> calculate_rivr_bucket_boundaries();
+uint8_t ars_to_bucket_flop(float ars);
+uint8_t ars_to_bucket_turn(float ars);
+uint8_t ars_to_bucket_rivr(float ars);
+
+extern ARSTable ars_table;

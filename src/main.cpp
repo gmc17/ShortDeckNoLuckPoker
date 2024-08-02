@@ -4,32 +4,11 @@
 #include "ars_table.h"
 #include "cfr.h"
 #include "constants.h"
+#include "ars_table.h"
+#include "info_set.h"
+#include "lbr.h"
 
 int main() {
-	uint32_t suita = 0b00000000000000000000000000000110;
-    uint32_t suitb = 0b00000000000000000000000000000000;
-    uint32_t suitc = 0b00000000000000001001000000000000;
-    uint32_t suitd = 0b00000000000000000000000000000000;
-    uint8_t  turn  = 						 0b00000000;
-	uint8_t  rivr  = 						 0b00000000;
-    uint8_t  flop_history = 			     0b00000000;
-    uint8_t  turn_history = 				 0b00000000;
-    uint8_t  rivr_history = 			     0b00000000;
-    bool call_preflop = 1;
-    bool player = 0;
-
-    GameState gs(suita,
-    			 suitb,
-				 suitc,
-				 suitd,	  
-				 turn,
-				 rivr,
-				 flop_history,
-				 turn_history,
-				 rivr_history,
-				 call_preflop,
-				 player);
-
 
     // const int NUM_SAMPLES = 5000;
     // float total = 0.0f;
@@ -51,7 +30,7 @@ int main() {
 	//     //std::cout << random.rivr_hand_strength() << "\n\n";
     // }
 
-    extern ARSTable ars_table;
+    
 
     // for (int i=0; i<10; i++) {
     // 	GameState random = generate_random_initial_state();
@@ -70,9 +49,15 @@ int main() {
     // std::cout << "1\n";
 
     // std::cout << ars_table(0, 3987, 71) << "\n";
+    // generate_ARS_tables();
 
-    
-	// for (int r=0; r<50; r++) {
+    // ars_table.load_from_file("ars_table.dat");
+
+    // std::array<int, TURN_BUCKETS> buckets;
+
+    // for (int i=0; i<TURN_BUCKETS; i++) buckets[i]=0;
+
+	// for (int r=0; r<20; r++) {
 	//     for (int p1=0; p1<36; p1++) {
 	//     	for (int p2=p1+1; p2<36; p2++) {
 	//     		std::array<uint16_t, 4> suits = {0, 0, 0, 0};
@@ -80,39 +65,56 @@ int main() {
 	//     		suits[p1/9] |= ((0b1)<<(p1%9));
 	//     		suits[p2/9] |= ((0b1)<<(p2%9));
 
-	//     		GameState gs(suits[0],
-	// 		    			 suits[1],
-	// 						 suits[2],
-	// 						 suits[3],
-	// 						 0, 0, 0, 0, 0, 0, 0);
+	//     		GameState gs;
+
+	//     		gs.suita = suits[0];
+	// 			gs.suitb = suits[1];
+	// 			gs.suitc = suits[2];
+	// 			gs.suitd = suits[3];
 
 	// 		    gs.apply_chance_action(32);
 	// 		    gs.apply_chance_action(31);
 	// 		    gs.apply_chance_action(30);
+	// 		    gs.apply_index(gs.action_to_index(1)); // check
+	// 		    gs.apply_index(gs.action_to_index(1)); // check
+	// 		    gs.apply_chance_action(29);
+	// 		    gs.apply_index(gs.action_to_index(1)); // check
+	// 		    gs.apply_index(gs.action_to_index(1)); // check
+	// 		    gs.apply_chance_action(28);
 
 	// 		    int p_id = pocket_id(p1,p2);
 	// 		    int rank = gs.best_hand(0)/100;
 
-	// 	    	std::cout << gs.to_string();
-    // 			std::cout << "(" << rank << ", " << CARD_NAMES[p1%9] << SUIT_NAMES[p1/9] << CARD_NAMES[p2%9] << SUIT_NAMES[p2/9] << ", p_id: " << p_id << "): " << ars_table(0, rank, p_id) << "\n\n";
+	// 		    // if (ars_table(2, rank, p_id)<=0.05) {
+	// 		    // 	std::cout << gs.to_string() << "\n\n";
+	// 		    // }
+
+	// 		    buckets[ars_to_bucket_rivr(ars_table(2, rank, p_id))]++;
 	// 		}
 	//     } 
 	// }
 
-    // const int num_runs = 1;
-    // const int iterations = 1000000;
-	// double total_time = 0.0;
+	// for (int i=0; i<TURN_BUCKETS; i++) std::cout << "River in bucket " << i << ": " << buckets[i] << "\n";
 
-	// for (int i=0; i<num_runs; i++) {
-	//     auto start = std::chrono::high_resolution_clock::now();
-	//     as_mccfr(iterations);
-	//     auto end = std::chrono::high_resolution_clock::now();
-	//     std::chrono::duration<double> elapsed = end - start;
-	//     total_time += elapsed.count();
+	// as_mccfr(30000000);
+
+	// sample_games(5);
+
+	GameState gs;
+	gs.print_range(6);
+	gs.apply_index(gs.action_to_index(6)); // call preflop
+	gs.print_range(7);
+	gs.apply_index(gs.action_to_index(7)); // check
+    gs.apply_chance_action(32);
+    gs.apply_chance_action(31);
+    gs.apply_chance_action(30);
+    gs.print_range(2); // range of bet pot on flop
+
+	// for (int i=1; i<8; i++) {
+	// 	GameState gs;
+	//     gs.print_range(i);
 	// }
 
-	// std::cout << "Parallel AS-MCCFR time for " << iterations << " iterations: " 
-	//           << total_time / num_runs << " seconds." << std::endl;
-
-    play_computer(0);
+    // play_computer();
+    return 0;
 }

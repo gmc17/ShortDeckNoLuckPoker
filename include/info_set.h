@@ -9,28 +9,23 @@
 class InfoSet {
 
 public:
-	InfoSet(int p,
-			bool call_preflop,
-			uint8_t flop_history, 
-            uint8_t turn_history, 
-            uint8_t rivr_history,
-			int flop_bucket,
-			int turn_bucket,
-			int rivr_bucket,
-			bool player);
+	InfoSet();
 
 	std::string to_string() const;
 	bool operator==(const InfoSet& other) const;
 	size_t hash() const;
-	int num_actions() const;
 
-	int p;
-	bool call_preflop;
-	uint8_t flop_history;
-	uint8_t turn_history;
-	uint8_t rivr_history;
+	bool player;
+	int pocket_id;
+	uint32_t pflp_history;
+	uint32_t flop_history;
+	uint32_t turn_history;
+	uint32_t rivr_history;
+	bool flop_seen;
+	bool turn_seen;
+    bool rivr_seen;
 	int flop_bucket;
 	int turn_bucket;
 	int rivr_bucket;
-	bool player;
+	int num_actions;
 };

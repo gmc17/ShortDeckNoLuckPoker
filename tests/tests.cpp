@@ -1,63 +1,123 @@
 #define CATCH_CONFIG_MAIN
 #include <gtest/gtest.h>
 #include "game_state.h"
+#include "constants.h"
 
-TEST(HandEvaluationTest, PotSizeTest01) {
-    uint32_t suita = 0b00000000101000000000000000000110;
-    uint32_t suitb = 0b00000000000000000000000000000000;
-    uint32_t suitc = 0b00000000010000001000000000000000;
-    uint32_t suitd = 0b00000000000000000010000000000000;
-    uint8_t  turn  =                         0b00000000;
-    uint8_t  rivr  =                         0b00000000;
-    uint8_t  flop_history =                  0b00110010;
-    uint8_t  turn_history =                  0b00110010;
-    uint8_t  rivr_history =                  0b00001010;
-    bool call_preflop = 0;
-    bool player = 0;
+/********************* HELPERS *********************/
 
-    GameState gs(suita,
-                 suitb,
-                 suitc,
-                 suitd,   
-                 turn,
-                 rivr,
-                 flop_history,
-                 turn_history,
-                 rivr_history,
-                 call_preflop,
-                 player);
+const double TOL = 0.01;
 
-    int result = gs.utility(0);
-    ASSERT_EQ(result, 90);
+int within(double a, double b)
+{
+  return fabs(a-b)<=TOL;
 }
 
-TEST(HandEvaluationTest, PotSizeTest02) {
-    uint32_t suita = 0b00000000101000000000000000000110;
-    uint32_t suitb = 0b00000000000000000000000000000000;
-    uint32_t suitc = 0b00000000010000001000000000000000;
-    uint32_t suitd = 0b00000000000000000010000000000000;
-    uint8_t  turn  =                         0b00000000;
-    uint8_t  rivr  =                         0b00000000;
-    uint8_t  flop_history =                  0b00110010;
-    uint8_t  turn_history =                  0b00110010;
-    uint8_t  rivr_history =                  0b00001010;
-    bool call_preflop = 0;
-    bool player = 0;
+/********************** TESTS **********************/
 
-    GameState gs(suita,
-                 suitb,
-                 suitc,
-                 suitd,   
-                 turn,
-                 rivr,
-                 flop_history,
-                 turn_history,
-                 rivr_history,
-                 call_preflop,
-                 player);
+TEST(ith_action, all_in_call) {
+    uint32_t pflp_history = 0b110111;
 
-    int result = gs.utility(0);
-    ASSERT_EQ(result, 90);
+    ASSERT_EQ(ith_action(pflp_history, 1), 6);
+    ASSERT_EQ(ith_action(pflp_history, 0), 7);
+}
+
+TEST(pot_size, preflop_all_in_call) {
+    GameState gs = generate_random_initial_state();
+    gs.apply_index(5);
+    gs.apply_index(6);
+    gs.apply_chance_action(32);
+    gs.apply_chance_action(31);
+    gs.apply_chance_action(30);
+
+    ASSERT_EQ(gs.pot_size, STACK_SIZE * 2);
+}
+
+TEST(pot_size, preflop_call_check) {
+    GameState gs = generate_random_initial_state();
+    gs.apply_index(6);
+    gs.apply_index(0);
+    gs.apply_chance_action(32);
+    gs.apply_chance_action(31);
+    gs.apply_chance_action(30);
+
+    ASSERT_EQ(gs.pot_size, 4.0f);
+}
+
+TEST(pot_size, preflop_call_minraise_fold) {
+    GameState gs = generate_random_initial_state();
+    gs.apply_index(6);
+    gs.apply_index(3);
+    gs.apply_index(0);
+
+    ASSERT_EQ(gs.pot_size, 4.0f);
+}
+
+TEST(pot_size, preflop_call_minraise_call) {
+    GameState gs = generate_random_initial_state();
+    gs.apply_index(6);
+    gs.apply_index(1);
+    gs.apply_index(6);
+    gs.apply_chance_action(32);
+    gs.apply_chance_action(31);
+    gs.apply_chance_action(30);
+
+    ASSERT_EQ(gs.pot_size, 8.0f);
+}
+
+TEST(pot_size, pot_call_to_turn) {
+    GameState gs = generate_random_initial_state();
+    gs.apply_index(6);
+    gs.apply_index(1);
+    gs.apply_index(6);
+    gs.apply_chance_action(32);
+    gs.apply_chance_action(31);
+    gs.apply_chance_action(30);
+    gs.apply_index(gs.action_to_index(4));
+    gs.apply_index(gs.action_to_index(7));
+    gs.apply_chance_action(29);
+    gs.apply_index(gs.action_to_index(4));
+    gs.apply_index(gs.action_to_index(7));
+
+    ASSERT_EQ(gs.pot_size, 72.0f);
+}
+
+TEST(pot_size, pot_call_to_river) {
+    GameState gs = generate_random_initial_state();
+    gs.apply_index(6);
+    gs.apply_index(1);
+    gs.apply_index(6);
+    gs.apply_chance_action(32);
+    gs.apply_chance_action(31);
+    gs.apply_chance_action(30);
+    gs.apply_index(gs.action_to_index(4));
+    gs.apply_index(gs.action_to_index(7));
+    gs.apply_chance_action(29);
+    gs.apply_index(gs.action_to_index(4));
+    gs.apply_index(gs.action_to_index(7));
+    gs.apply_chance_action(28);
+    gs.apply_index(gs.action_to_index(6)); // must go all-in by this point
+    gs.apply_index(gs.action_to_index(7));
+
+    ASSERT_EQ(gs.pot_size, 200.0f);
+}
+
+TEST(pot_size, pot_call_to_river02) {
+    GameState gs = generate_random_initial_state();
+    gs.apply_index(6);
+    gs.apply_index(0);
+    gs.apply_chance_action(32);
+    gs.apply_chance_action(31);
+    gs.apply_chance_action(30);
+    gs.apply_index(gs.action_to_index(4));
+    gs.apply_index(gs.action_to_index(7));
+    gs.apply_chance_action(29);
+    gs.apply_index(gs.action_to_index(4));
+    gs.apply_index(gs.action_to_index(7));
+    gs.apply_chance_action(28);
+    gs.apply_index(gs.action_to_index(4));
+    gs.apply_index(gs.action_to_index(7));
+
+    ASSERT_EQ(gs.pot_size, 108.0f);
 }
 
 int main(int argc, char **argv) {

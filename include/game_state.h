@@ -78,55 +78,54 @@ public:
 	* @param 'player' Boolean indicating the active player (false for small blind, true for big blind)
 	*/
 
-	GameState(uint32_t suita, 
-			  uint32_t suitb, 
-			  uint32_t suitc, 
-              uint32_t suitd, 
-              uint8_t  turn,
-              uint8_t  rivr,
-              uint8_t  flop_history, 
-              uint8_t  turn_history, 
-              uint8_t  rivr_history,
-              bool call_preflop,
-              bool player);
+	GameState();
 
 	// Utility methods
-	std::string to_string() const;
+	std::string to_string(bool verbose = false) const;
 	bool operator==(const GameState& other) const;
 
 	// Game logic
 	bool is_terminal() const;
 	bool is_chance() const;
 	int best_hand(bool p) const;
-	float showdown() const;
-	float pot_size() const;
+	float showdown(bool p) const;
 	float utility(bool p) const;
-	
+
+	int index_to_action(int index) const;
+	std::string action_to_string(int action) const;
+	std::string histories_to_string() const;
+	int action_to_index(int action) const;
 	int num_actions() const;
 	int num_chance_actions() const;
-	void apply_action(int action);
+	void apply_index(int index);
 	void apply_chance_action(int actions);
 
 	// CFR helpers
 	InfoSet to_information_set();
 	float rivr_hand_strength();
 	int p_id(bool p) const;
+	void print_range(int action) const;
 	
+	bool player;
 	uint32_t suita;
 	uint32_t suitb;
 	uint32_t suitc;
 	uint32_t suitd;
 	uint8_t  turn;
 	uint8_t  rivr;
-	uint8_t flop_history;
-	uint8_t turn_history;
-	uint8_t rivr_history;
-	bool call_preflop;
-	bool player;
+	uint32_t pflp_history;
+	uint32_t flop_history;
+	uint32_t turn_history;
+	uint32_t rivr_history;
+	float pot_size;
+	float biggest_bet;
+	float biggest_mutual_bet;
+	bool flop_seen;
+	bool turn_seen;
+	bool rivr_seen;
 };
 
-size_t hash_gamestate(const GameState& gs);
-
-void play_computer(bool p);
-int pocket_id(int p1, int p2);
+void play_computer();
+int ith_action(uint32_t history, int i);
 GameState generate_random_initial_state();
+std::array<int, 2> pocket_id_to_row_col(int id);
