@@ -52,7 +52,7 @@ After training, start a game with:
 ## Range Generation
 The program can generate output its ranges for any position/action in the game. For example, here is its SB preflop fold range:
 
-![SB Preflop Fold Range](sb_preflop_fold_range.png)
+![SB Preflop Fold Range](images/sb_preflop_fold_range.png)
 
 To generate custom ranges, you can use the `GameState::print_range()` function. We are working on making this feature more user-friendly in future updates.
 
@@ -64,6 +64,8 @@ After training for 30 million iterations, we evaluated our strategy using the Lo
 - Hardware used: 2018 MacBook Pro, 2.2 GHz 6-Core Intel Core i7, 16 GB 2400 MHz DDR4 RAM
 
 This exploitability measure indicates that our strategy is highly competitive, with expected losses limited to less than 30 big blinds per 100 hands against a theoretical perfect opponent. For context, professional poker players often aim for win rates of 5-10 big blinds per 100 hands against human opponents.
+
+![LBR results](images/lbr_results.png)
 
 ## Requirements
 * C++ compiler with C++20 support
