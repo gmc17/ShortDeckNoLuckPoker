@@ -7,8 +7,8 @@ This project aims to provide the first free, open-source tool for strategy analy
 ## Introduction
 Short Deck Poker, also known as Six Plus Hold'em, is a variant of Texas Hold'em played with a 36-card deck. The hand rankings are unchanged, except that in this version, a flush ranks higher than a full house. This project utilizes the AS-MCCFR algorithm, a variation of Counterfactual Regret Minimization, to compute near-optimal strategies for this game. Our implementation currently offers both a playable AI opponent and a tool for generating ranges. We are actively working on making the interface more user-friendly.
 
-## Installation and Training the AI
-To play against the AI, you need to first train it. Follow these steps:
+## Installation and Training the Strategy
+To play against the computer, you need to first train it. Follow these steps:
 
 #### Clone the repository: 
 ```bash
@@ -22,20 +22,20 @@ cd ShortDeckNoLuckPoker
 ```make generate-ars```
 *Note:* this process can be time-consuming and only needs to be done once. It is highly recommended to simply use the file we uploaded to this page.
 
-#### Train the AI:
+#### Calculate the Strategy:
 ```./shortdeck train [iterations]```
 Replace `[iterations]` with the number of training iterations you want. For example:
 ```./shortdeck train 1000000```.
 If you don't specify the number of iterations, it will use a default value of 1,000,000.
 
-## Playing Against the AI
+## Playing Against the Computer
 
 #### Play against the computer:
 After training, start a game with:
 ```./shortdeck play```
 
-#### Follow the prompts in the command-line interface to play your game against the AI.
-*Note:* You can further train the AI at any time by running the ```train``` command again. The AI will start from its current state and continue training for the specified number of iterations.
+#### Follow the prompts in the command-line interface to play your game against the computer.
+*Note:* You can further train the AI at any time by running the ```train``` command again. The computer will start from its current state and continue training for the specified number of iterations.
 
 #### You will be prompted to input actions during gameplay. Enter an integer from 1-7, corresponding to the following actions:
 
