@@ -17,7 +17,7 @@ all: $(MAIN) $(SHORTDECK)
 $(MAIN): $(SRCS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-$(SHORTDECK): src/shortdeck_main.cpp src/game_state.cpp src/cfr.cpp src/ars_table.cpp src/info_set.cpp src/lbr.cpp
+$(SHORTDECK): src/main.cpp src/game_state.cpp src/cfr.cpp src/ars_table.cpp src/info_set.cpp src/lbr.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 $(TEST): $(TEST_SRCS)

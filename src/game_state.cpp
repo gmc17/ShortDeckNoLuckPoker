@@ -881,6 +881,49 @@ void GameState::apply_index(int index) {
     rivr_history = (rivr_history << 3) | a;
 }
 
+// void GameState::undo() {
+//     if (rivr_seen) {
+//         if (rivr_history > 0) {
+//             rivr_history >>= 3; // every action is 3 bits long
+//             return;
+//         } else if (rivr_history == 0) {
+//             rivr = 0;
+//             return;
+//         }
+//     }
+
+//     if (turn_seen) {
+//         if (turn_history > 0) {
+//             turn_history >>= 3;
+//             return;
+//         } else if (turn_history == 0) {
+//             turn = 0;
+//             return;
+//         }
+//     }
+
+//     if (flop_seen) {
+//         if (flop_history > 0) {
+//             flop_history >>= 3; // every action is 3 bits long
+//             return;
+//         } else if (flop_history == 0) {
+//             uint32_t mask = 0b111111111111111111;
+//             suita &= mask;
+//             suitb &= mask;
+//             suitc &= mask;
+//             suitd &= mask;
+//             return;
+//         }
+//     }
+
+//     if (!flop_seen) {
+//         if (pflp_history > 0) {
+//             pflp_history >>= 3;
+//             return;
+//         }
+//     }
+// }
+
 void GameState::apply_chance_action(int actions) {
 
     uint16_t suita_all = ((suita>>18) | (suita>>9) | suita) & 0b111111111;

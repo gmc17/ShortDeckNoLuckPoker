@@ -99,6 +99,7 @@ public:
 	int num_chance_actions() const;
 	void apply_index(int index);
 	void apply_chance_action(int actions);
+	// void undo();
 
 	// CFR helpers
 	InfoSet to_information_set();

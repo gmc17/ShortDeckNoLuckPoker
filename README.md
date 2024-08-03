@@ -59,7 +59,7 @@ To generate custom ranges, you can use the `GameState::print_range()` function. 
 ## Results
 After training for 30 million iterations, we evaluated our strategy using the Local Best Response (LBR) algorithm. The results are as follows:
 
-- Approximate lower bound for strategy exploitability: 270 ± 50 mBB/h (milli big-blinds per hand)
+- Approximate lower bound for strategy exploitability: 175 ± 50 mBB/h (milli big-blinds per hand)
 - Training time: 6hrs
 - Hardware used: 2018 MacBook Pro, 2.2 GHz 6-Core Intel Core i7, 16 GB 2400 MHz DDR4 RAM
 
