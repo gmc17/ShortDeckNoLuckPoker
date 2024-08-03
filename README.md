@@ -86,7 +86,7 @@ We would like to thank the authors of the following papers, whose work has been 
    - This paper provided the foundation for our implementation of the AS-MCCFR algorithm.
 
 [2]. Johanson, M., Waugh, K., Bowling, M., Zinkevich, M.: [Accelerating Best Response Calculation in Large Extensive Games](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf). In: Proceedings of the Twenty-Second International Joint Conference on Artificial Intelligence (IJCAI), pp. 258-265 (2011)
-   - We utilized the Average Rank Strength concept from this paper to speed up our game abstraction computation.
+   - We utilized the Local Best Response (LBR) algorithm described in this paper to calculate an approximate lower bound for the strategy's exploitability.
 
 [3]. Teofilo, L.F., Reis, L.P., Cardoso, H.L.: [Speeding-Up Poker Game Abstraction Computation: Average Rank Strength](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf). In: AAAI Workshop on Computer Poker and Imperfect Information (2013)
-   - This work provided additional insights into optimizing the Average Rank Strength calculations for poker game abstractions.
+   - We used the Average Rank Strength calculations from this paper to speed up card abstraction computation.
