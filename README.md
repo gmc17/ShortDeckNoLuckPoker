@@ -25,8 +25,7 @@ cd ShortDeckNoLuckPoker
 5. Train the AI:
 ```./shortdeck train [iterations]```
 Replace `[iterations]` with the number of training iterations you want. For example:
-```./shortdeck train 1000000```
-
+```./shortdeck train 1000000```.
 If you don't specify the number of iterations, it will use a default value of 1,000,000.
 
 ## Playing Against the AI
