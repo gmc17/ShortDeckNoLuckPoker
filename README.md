@@ -73,7 +73,7 @@ This exploitability measure indicates that our strategy is highly competitive, w
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
-This project is licensed under the AGPL 3.0 License - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the AGPL-3.0 License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ## Authors
 [Glen Cahilly](https://github.com/gmc17)
