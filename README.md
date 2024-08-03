@@ -7,7 +7,7 @@ This project implements the AS-MCCFR algorithm to compute Game Theory Optimal (G
 ## Introduction
 Short Deck Poker, also known as Six Plus Hold'em, is a variant of Texas Hold'em played with a 36-card deck. The hand rankings are unchanged, except that in this version, a flush ranks higher than a full house. This project utilizes the AS-MCCFR algorithm, a variation of Counterfactual Regret Minimization, to compute near-optimal strategies for this game. Our implementation currently offers both a playable AI opponent and a tool for generating ranges. We are actively working on making the interface more user-friendly.
 
-## Installation & Training the AI
+## Installation and Training the AI
 To play against the AI, you need to first train it and then start a game. Follow these steps:
 
 1. Clone the repository: 
