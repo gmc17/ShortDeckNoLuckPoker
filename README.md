@@ -35,8 +35,7 @@ After training, start a game with:
 ```./shortdeck play```
 
 2. Follow the prompts in the command-line interface to play your game against the AI.
-
-Note: You can further train the AI at any time by running the ```train``` command again. The AI will start from its current state and continue training for the specified number of iterations.
+*Note:* You can further train the AI at any time by running the ```train``` command again. The AI will start from its current state and continue training for the specified number of iterations.
 
 3. You will be prompted to input actions during gameplay. Enter an integer from 1-7, corresponding to the following actions:
 
