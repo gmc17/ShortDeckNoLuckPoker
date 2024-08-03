@@ -2,7 +2,7 @@
 ![Release](https://img.shields.io/badge/release-v0.0.1-blue)
 [![license](https://img.shields.io/github/license/gmc17/ShortDeckNoLuckPoker?style=flat-square)](https://github.com/gmc17/ShortDeckNoLuckPoker/blob/master/LICENSE)
 
-This project implements the AS-MCCFR algorithm to compute Game Theory Optimal (GTO) strategies for heads-up Short Deck Poker. It aims to provide a free, open-source tool for strategy analysis in this increasingly popular poker variant.
+This project aims to provide the first free, open-source tool for strategy analysis in Short Deck Poker.
 
 ## Introduction
 Short Deck Poker, also known as Six Plus Hold'em, is a variant of Texas Hold'em played with a 36-card deck. The hand rankings are unchanged, except that in this version, a flush ranks higher than a full house. This project utilizes the AS-MCCFR algorithm, a variation of Counterfactual Regret Minimization, to compute near-optimal strategies for this game. Our implementation currently offers both a playable AI opponent and a tool for generating ranges. We are actively working on making the interface more user-friendly.
