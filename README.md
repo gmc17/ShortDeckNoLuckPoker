@@ -63,7 +63,7 @@ After training for 30 million iterations, we evaluated our strategy using the Lo
 - Training time: 6hrs
 - Hardware used: 2018 MacBook Pro, 2.2 GHz 6-Core Intel Core i7, 16 GB 2400 MHz DDR4 RAM
 
-This exploitability measure indicates that our strategy is highly competitive, with expected losses limited to less than 30 big blinds per 100 hands against a theoretical perfect opponent. For context, professional poker players often aim for win rates of 5-10 big blinds per 100 hands against human opponents.
+This exploitability measure indicates that our strategy is highly competitive, with expected losses limited to less than 30 big blinds per 100 hands against a theoretical perfect opponent. For context, professional poker players often aim for win rates of 5-10 big blinds per 100 hands against human opponents (who are far from theoretically perfect).
 
 ![LBR results](images/lbr_results.png)
 
