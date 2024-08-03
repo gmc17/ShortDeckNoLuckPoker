@@ -8,7 +8,30 @@
 #include "info_set.h"
 #include "lbr.h"
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc > 1) {
+        std::string arg = argv[1];
+        if (arg == "train") {
+            int iterations = 1000000;  // Default value
+            if (argc > 2) {
+                iterations = std::stoi(argv[2]);
+            }
+            std::cout << "Training AI with " << iterations << " iterations..." << std::endl;
+            as_mccfr(iterations);
+            std::cout << "Training complete." << std::endl;
+        } else if (arg == "play") {
+            play_computer();
+        } else if (arg == "generate-ars") {
+            std::cout << "Generating ARS table. This may take a while..." << std::endl;
+            generate_ars_tables();
+            std::cout << "ARS table generation complete. File 'ars_table.dat' created." << std::endl;
+        } else {
+            std::cout << "Invalid argument. Use 'train', 'play', or 'generate-ars'." << std::endl;
+        }
+    } else {
+        std::cout << "Usage: ./shortdeck [train <iterations>|play|generate-ars]" << std::endl;
+    }
+    return 0;
 
     // const int NUM_SAMPLES = 5000;
     // float total = 0.0f;
@@ -117,10 +140,7 @@ int main() {
 
     // play_computer();
 
-	load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
-
-	
-
+	// load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
 
 	// for (int i=0; i<5; i++) {
 
@@ -134,14 +154,14 @@ int main() {
 	// 	GameState gs = generate_random_initial_state();
 	// 	gs.apply_index(gs.action_to_index(7)); // call
 	// 	print_opponent_range(range);
-	// 	range = update_range(gs, 0, 0, range);
+	// 	range = update_range(gs, 0, 0, 0, range);
 	// 	print_opponent_range(range);
 	// 	gs.apply_index(gs.action_to_index(1)); // check
 	// 	gs.apply_chance_action(32);
 	// 	gs.apply_chance_action(31);
 	// 	gs.apply_chance_action(30);
 	// 	gs.apply_index(gs.action_to_index(1)); // check
-	// 	range = update_range(gs, 3, 0, range);
+	// 	range = update_range(gs, 3, 0, 0, range);
 	// 	print_opponent_range(range);
 	// 	gs.apply_index(gs.action_to_index(4)); // bet pot
 	// 	std::cout << "player: " << gs.player << "\n";
@@ -150,10 +170,10 @@ int main() {
 	// 	std::cout << gs.to_string() << "lbr index: " << lbr << "\n\n";
 	// }
 
-	int iterations = 1000;
-	float approx_exploitability = calculate_exploitability(iterations);
+	// int hands = 50000;
+	// float approx_exploitability = calculate_exploitability(hands);
 
-	std::cout << "Average exploitability over " << iterations << " iterations: " << approx_exploitability << "\n"; 
+	// std::cout << "Average exploitability over " << hands << " hands: " << approx_exploitability << "\n"; 
 
     return 0;
 }

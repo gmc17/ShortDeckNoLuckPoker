@@ -1,10 +1,8 @@
-.PHONY: all clean test run debug profile quick
-
+.PHONY: all clean test run debug profile quick train play generate-ars
 CXX = g++
 CXXFLAGS = -Wall -std=c++20 -I./include -Ofast -march=native -mtune=native -flto -ffast-math -funroll-loops -finline-functions
 DEBUGFLAGS = -g -O0 -DDEBUG
 PROFILEFLAGS = -g -fprofile-instr-generate -fcoverage-mapping
-QUICKFLAGS = -O1 -Wall -std=c++20 -I./include
 LIBS = -L/usr/local/lib -lgtest -lgtest_main -pthread
 SRCS = src/main.cpp src/game_state.cpp src/cfr.cpp src/ars_table.cpp src/info_set.cpp src/lbr.cpp
 TEST_SRCS = tests/tests.cpp src/game_state.cpp src/cfr.cpp src/ars_table.cpp src/info_set.cpp src/lbr.cpp
@@ -12,11 +10,14 @@ MAIN = main
 TEST = test_executable
 DEBUG = main_debug
 PROFILE = main_profile
-QUICK = main_quick
+SHORTDECK = shortdeck
 
-all: $(MAIN)
+all: $(MAIN) $(SHORTDECK)
 
 $(MAIN): $(SRCS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+$(SHORTDECK): src/shortdeck_main.cpp src/game_state.cpp src/cfr.cpp src/ars_table.cpp src/info_set.cpp src/lbr.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 $(TEST): $(TEST_SRCS)
@@ -27,9 +28,6 @@ $(DEBUG): $(SRCS)
 
 $(PROFILE): $(SRCS)
 	$(CXX) $(CXXFLAGS) $(PROFILEFLAGS) -o $@ $^ $(LIBS)
-
-$(QUICK): $(SRCS)
-	$(CXX) $(QUICKFLAGS) -o $@ $^ $(LIBS)
 
 test: $(TEST)
 	./$(TEST)
@@ -49,5 +47,14 @@ profile: $(PROFILE)
 quick: $(QUICK)
 	./$(QUICK)
 
+train: $(SHORTDECK)
+	./$(SHORTDECK) train $(ITERATIONS)
+
+play: $(SHORTDECK)
+	./$(SHORTDECK) play
+
+generate-ars: $(SHORTDECK)
+	./$(SHORTDECK) generate-ars
+
 clean:
-	rm -f $(MAIN) $(TEST) $(DEBUG) $(PROFILE) $(QUICK) *.profraw *.profdata gmon.out profile_output.txt *.jar *.dSYM
+	rm -f $(MAIN) $(TEST) $(DEBUG) $(PROFILE) $(SHORTDECK) *.profraw *.profdata gmon.out profile_output.txt *.jar *.dSYM
