@@ -8,7 +8,7 @@ This project implements the AS-MCCFR algorithm to compute Game Theory Optimal (G
 Short Deck Poker, also known as Six Plus Hold'em, is a variant of Texas Hold'em played with a 36-card deck. The hand rankings are unchanged, except that in this version, a flush ranks higher than a full house. This project utilizes the AS-MCCFR algorithm, a variation of Counterfactual Regret Minimization, to compute near-optimal strategies for this game. Our implementation currently offers both a playable AI opponent and a tool for generating ranges. We are actively working on making the interface more user-friendly.
 
 ## Installation and Training the AI
-To play against the AI, you need to first train it and then start a game. Follow these steps:
+To play against the AI, you need to first train it. Follow these steps:
 
 1. Clone the repository: 
 ```bash
@@ -20,10 +20,9 @@ cd ShortDeckNoLuckPoker
 
 3. Generate the ARS table (if ```ars_table.dat``` is not already present in your project directory):
 ```make generate-ars```
-
 *Note:* this process can be time-consuming and only needs to be done once. It is highly recommended to simply use the file we uploaded to this page.
 
-4. Train the AI:
+5. Train the AI:
 ```./shortdeck train [iterations]```
 Replace `[iterations]` with the number of training iterations you want. For example:
 ```./shortdeck train 1000000```
@@ -52,21 +51,6 @@ Note: You can further train the AI at any time by running the ```train``` comman
 | 6     | All-in                    |
 | 7     | Call                      |
 
-### Important: Average Rank Strength (ARS) Table
-
-This project requires a precomputed Average Rank Strength (ARS) table to function correctly. You have two options:
-
-1. **Download the pre-generated `ars_table.dat` file (Recommended)**
-   - This is the faster and easier option.
-   - Place the downloaded file in the project's root directory.
-
-2. **Generate the ARS table yourself**
-   - Run `generate_ars_tables()`.
-   - This will create `ars_table.dat` in the current directory.
-   - Not recommended, as this process is time-consuming.
-
-**Note:** Ensure you complete one of these steps before running the solver. The pre-generated file is recommended for most users to save time and computational resources.
-
 ## Range Generation
 The program can generate output its ranges for any position/action in the game. For example, here is its SB preflop fold range:
 
@@ -83,7 +67,6 @@ After training for 30 million iterations, we evaluated our strategy using the Lo
 
 This exploitability measure indicates that our strategy is highly competitive, with expected losses limited to less than 30 big blinds per 100 hands against a theoretical perfect opponent. For context, professional poker players often aim for win rates of 5-10 big blinds per 100 hands against human opponents.
 
-
 ## Requirements
 * C++ compiler with C++20 support
 * Make
@@ -95,18 +78,17 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ## Authors
-
 [Glen Cahilly](https://github.com/gmc17)
 
 ## Acknowledgements
 
 We would like to thank the authors of the following papers, whose work has been instrumental in the development of this project:
 
-1. Burch, N., Lanctot, M., Szafron, D., Gibson, R.G.: [Efficient Monte Carlo counterfactual regret minimization in games with many player actions](https://proceedings.neurips.cc/paper_files/paper/2012/file/3df1d4b96d8976ff5986393e8767f5b2-Paper.pdf). In: Advances in Neural Information Processing Systems, pp. 1880–1888 (2012)
+[1]. Burch, N., Lanctot, M., Szafron, D., Gibson, R.G.: [Efficient Monte Carlo counterfactual regret minimization in games with many player actions](https://proceedings.neurips.cc/paper_files/paper/2012/file/3df1d4b96d8976ff5986393e8767f5b2-Paper.pdf). In: Advances in Neural Information Processing Systems, pp. 1880–1888 (2012)
    - This paper provided the foundation for our implementation of the AS-MCCFR algorithm.
 
-2. Johanson, M., Waugh, K., Bowling, M., Zinkevich, M.: [Accelerating Best Response Calculation in Large Extensive Games](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf). In: Proceedings of the Twenty-Second International Joint Conference on Artificial Intelligence (IJCAI), pp. 258-265 (2011)
+[2]. Johanson, M., Waugh, K., Bowling, M., Zinkevich, M.: [Accelerating Best Response Calculation in Large Extensive Games](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf). In: Proceedings of the Twenty-Second International Joint Conference on Artificial Intelligence (IJCAI), pp. 258-265 (2011)
    - We utilized the Average Rank Strength concept from this paper to speed up our game abstraction computation.
 
-3. Teofilo, L.F., Reis, L.P., Cardoso, H.L.: [Speeding-Up Poker Game Abstraction Computation: Average Rank Strength](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf). In: AAAI Workshop on Computer Poker and Imperfect Information (2013)
+[3]. Teofilo, L.F., Reis, L.P., Cardoso, H.L.: [Speeding-Up Poker Game Abstraction Computation: Average Rank Strength](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf). In: AAAI Workshop on Computer Poker and Imperfect Information (2013)
    - This work provided additional insights into optimizing the Average Rank Strength calculations for poker game abstractions.
