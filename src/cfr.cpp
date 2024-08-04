@@ -1,7 +1,5 @@
 #include "cfr.h"
 
-std::mutex strategy_sum_mutex;
-std::mutex regret_sum_mutex;
 std::array<std::array<float, 7>, STRATEGY_ARRAY_SIZE> regret_sum;
 std::array<std::array<float, 7>, STRATEGY_ARRAY_SIZE> strategy_sum;
 
@@ -193,7 +191,7 @@ void as_mccfr(int iterations) {
     total_time += elapsed.count();
 
     std::cout << iterations << " iterations of Parallel AS-MCCFR: "
-              << total_time << " seconds. " << iterations/total_time << " iterations/second." << "\n\n";
+              << total_time << " seconds. " << iterations/total_time << " iterations/second." << "\n";
 }
 
 void as_mccfr_worker(int start, int end) {
@@ -224,7 +222,6 @@ float as_traverse_tree(GameState gs, bool active_player, float q) {
 
     if (info_set.player != active_player) {
         for (int a=0; a<actions; a++) {
-            std::lock_guard<std::mutex> lock(strategy_sum_mutex);
             strategy_sum[hash][a] += strategy[a] / q;
         }
 
@@ -262,7 +259,6 @@ float as_traverse_tree(GameState gs, bool active_player, float q) {
     }
 
     for (int a=0; a<actions; a++) {
-        std::lock_guard<std::mutex> lock(regret_sum_mutex);
         regret_sum[hash][a] += action_utils[a] - node_util;
     }
 

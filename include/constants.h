@@ -36,7 +36,7 @@ inline constexpr int pocket_id(int p1, int p2) noexcept {
 }
 
 //****************************** CFR Parameters ******************************//
-static const size_t STRATEGY_ARRAY_SIZE = 10000007;
+static const size_t STRATEGY_ARRAY_SIZE = 30000007;
 static const float EPSILON = 0.05;
 static const float TAU = 1000;
 static const float BETA = 1000000;

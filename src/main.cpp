@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
             if (argc > 2) {
                 iterations = std::stoi(argv[2]);
             }
-            std::cout << "Training AI with " << iterations << " iterations..." << std::endl;
+            std::cout << "Training for " << iterations << " iterations..." << std::endl;
             as_mccfr(iterations);
             std::cout << "Training complete." << std::endl;
         } else if (arg == "play") {
@@ -25,13 +25,56 @@ int main(int argc, char* argv[]) {
             std::cout << "Generating ARS table. This may take a while..." << std::endl;
             generate_ars_tables();
             std::cout << "ARS table generation complete. File 'ars_table.dat' created." << std::endl;
+        } else if (arg == "exploit") {
+            int hands = 1000;  // Default value
+            if (argc > 2) {
+                hands = std::stoi(argv[2]);
+            }
+            std::cout << "Calculating approximate exploitability over " << hands << " hands..." << std::endl;
+            calculate_exploitability(hands);
         } else {
-            std::cout << "Invalid argument. Use 'train', 'play', or 'generate-ars'." << std::endl;
+            std::cout << "Invalid argument. Use 'train', 'play', 'generate-ars', or 'exploit'." << std::endl;
         }
     } else {
-        std::cout << "Usage: ./shortdeck [train <iterations>|play|generate-ars]" << std::endl;
+        std::cout << "Usage: ./shortdeck [train <iterations>|play|generate-ars|exploit <hands>]" << std::endl;
     }
     return 0;
+
+    // GameState gs;
+
+    //SB cards:   7♠K♥
+	//BB cards:   7♥9♥
+	//Flop cards: T♥K♦7♣
+	//Turn card:  8♥
+	//River card: T♦
+
+	// gs.suita |= (0b1<<1); // sb7s
+	// gs.suitb |= (0b1<<7); // sbKh
+
+	// gs.suitb |= (0b1<<10); // bb7h
+	// gs.suitb |= (0b1<<12); // bb9h
+
+	// gs.suitb |= (0b1<<22); // Th
+	// gs.suitc |= (0b1<<25); // Kd
+	// gs.suitd |= (0b1<<19); // 7c
+	// gs.turn = 0b010010; // 8h
+	// gs.rivr = 0b100100; // Td
+
+	// gs.pflp_history = 0b111001;
+	// gs.flop_history = 0b1110111;
+	// gs.pot_size = 200;
+
+	// gs.turn_seen = true;
+	// gs.rivr_seen = true;
+	// gs.flop_seen = true;
+
+    // std::cout << gs.to_string() << "\n";
+
+    // std::cout << "sb best hand: " << gs.best_hand(0);
+    // std::cout << "\nbb best hand: " << gs.best_hand(1) << "\n";
+
+    // std::cout << "sb utility: " << gs.utility(0);
+    // std::cout << "\nbb utility: " << gs.utility(1) << "\n";
 
     // const int NUM_SAMPLES = 5000;
     // float total = 0.0f;
@@ -133,10 +176,10 @@ int main(int argc, char* argv[]) {
     // gs.apply_chance_action(30);
     // gs.print_range(2); // range of bet pot on flop
 
-	// for (int i=1; i<8; i++) {
-	// 	GameState gs;
-	//     gs.print_range(i);
-	// }
+	for (int i=1; i<8; i++) {
+		GameState gs;
+	    gs.print_range(i);
+	}
 
     // play_computer();
 

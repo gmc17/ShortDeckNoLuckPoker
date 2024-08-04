@@ -5,7 +5,6 @@
 #include <iostream>
 #include <array>
 #include <thread>
-#include <mutex>
 #include <random>
 
 #include "game_state.h"

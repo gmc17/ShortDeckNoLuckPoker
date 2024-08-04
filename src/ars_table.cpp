@@ -52,8 +52,6 @@ void ARSTable::load_from_file(const std::string& filename) {
     file.close();
 }
 
-std::mutex ars_mutex, cum_sum_mutex, count_mutex;
-
 void ars_worker_exhaustive_river(int start, int thread_id, ARSTable& ars_table, ARSTable& cum_sum_table, ARSTable& count_table) {
     uint32_t i=0;
     for (int p1=start; p1<start+1; p1++) {
@@ -97,10 +95,6 @@ void ars_worker_exhaustive_river(int start, int thread_id, ARSTable& ars_table, 
 
                                     int rank = gs.best_hand(0) / 100;
                                     {
-                                        std::lock_guard<std::mutex> ars_lock(ars_mutex);
-                                        std::lock_guard<std::mutex> cum_sum_lock(cum_sum_mutex);
-                                        std::lock_guard<std::mutex> count_lock(count_mutex);
-
                                         count_table(2, rank, p_id) += 1;
                                         cum_sum_table(2, rank, p_id) += gs.rivr_hand_strength();
                                         ars_table(2, rank, p_id) = cum_sum_table(2, rank, p_id) / count_table(2, rank, p_id);
@@ -158,10 +152,6 @@ void ars_worker_exhaustive_turn(int start, int thread_id, ARSTable& ars_table, A
                                         int rivr_rank = gs.best_hand(0) / 100;
                                         
                                         {
-                                            std::lock_guard<std::mutex> ars_lock(ars_mutex);
-                                            std::lock_guard<std::mutex> cum_sum_lock(cum_sum_mutex);
-                                            std::lock_guard<std::mutex> count_lock(count_mutex);
-
                                             count_table(1, turn_rank, p_id) += 1;
                                             cum_sum_table(1, turn_rank, p_id) += ars_table(2, rivr_rank, p_id);
                                             ars_table(1, turn_rank, p_id) = cum_sum_table(1, turn_rank, p_id) / count_table(1, turn_rank, p_id);
@@ -215,10 +205,6 @@ void ars_worker_exhaustive_flop(int start, int thread_id, ARSTable& ars_table, A
                                     int turn_rank = gs.best_hand(0) / 100;
                                     
                                     {
-                                        std::lock_guard<std::mutex> ars_lock(ars_mutex);
-                                        std::lock_guard<std::mutex> cum_sum_lock(cum_sum_mutex);
-                                        std::lock_guard<std::mutex> count_lock(count_mutex);
-
                                         count_table(0, flop_rank, p_id) += 1;
                                         cum_sum_table(0, flop_rank, p_id) += ars_table(1, turn_rank, p_id);
                                         ars_table(0, flop_rank, p_id) = cum_sum_table(0, flop_rank, p_id) / count_table(0, flop_rank, p_id);

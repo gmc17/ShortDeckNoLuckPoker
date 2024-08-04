@@ -56,5 +56,8 @@ play: $(SHORTDECK)
 generate-ars: $(SHORTDECK)
 	./$(SHORTDECK) generate-ars
 
+exploit: $(SHORTDECK)
+	./$(SHORTDECK) exploit $(HANDS)
+
 clean:
 	rm -f $(MAIN) $(TEST) $(DEBUG) $(PROFILE) $(SHORTDECK) *.profraw *.profdata gmon.out profile_output.txt *.jar *.dSYM

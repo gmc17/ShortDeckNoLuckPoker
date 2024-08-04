@@ -511,23 +511,24 @@ float GameState::showdown(bool p) const {
 
 float GameState::utility(bool p) const {
     // Preflop fold
-    if ((pflp_history & 0b111) == 0b1) return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
+    if (((pflp_history & 0b111) == 0b1) &&
+          pflp_history != 0b111001) return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
     // Fold on flop
     if (((flop_history & 0b111) == 0b1) &&
-        (flop_history != 0b11) &&
+        (flop_history != 0b1001) &&
         (flop_history != 0b1))
         return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
     // Fold on turn
     if (((turn_history & 0b111) == 0b1) &&
-        (turn_history != 0b11) &&
+        (turn_history != 0b1001) &&
         (turn_history != 0b1))
         return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
     // Fold on river
     if (((rivr_history & 0b111) == 0b1) &&
-        (rivr_history != 0b11) &&
+        (rivr_history != 0b1001) &&
         (rivr_history != 0b1))
         return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
@@ -1116,13 +1117,14 @@ std::string GameState::action_to_string(int action) const {
     
     if (pflp_history == 0) {
         ss << RAISE_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " " << biggest_bet * RAISE_SIZES[action-2];
+        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
         return ss.str();
     }
     
     if (pflp_history == 0b111) {
-        ss << BET_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " " << pot_size * BET_SIZES[action-2];
+        if (action == 1) return "Check";
+        ss << RAISE_ACTION_NAMES[action-1];
+        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
         return ss.str();
     }
     
@@ -1133,7 +1135,7 @@ std::string GameState::action_to_string(int action) const {
     if ((pflp_history < 0b1000000000) && // bet/raise; respond 1-7
         (!flop_seen)) {
         ss << RAISE_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " " << biggest_bet * RAISE_SIZES[action-2];
+        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
         return ss.str();
     }
     
@@ -1156,7 +1158,7 @@ std::string GameState::action_to_string(int action) const {
     
     if ((flop_history < 0b1000000000) && // bet/raise; respond 1-7
         (!turn_seen)) {
-        ss << RAISE_ACTION_NAMES[action-1] << " ";
+        ss << RAISE_ACTION_NAMES[action-1] << " to ";
         if ((action >= 2) && (action<=5)) ss << biggest_bet * RAISE_SIZES[action-2];
         return ss.str();
     } 
@@ -1180,7 +1182,7 @@ std::string GameState::action_to_string(int action) const {
     
     if ((turn_history < 0b1000000000) && // bet/raise; respond 1-7
         (!rivr_seen)) {
-        ss << RAISE_ACTION_NAMES[action-1] << " ";
+        ss << RAISE_ACTION_NAMES[action-1] << " to ";
         if ((action >= 2) && (action<=5)) ss << biggest_bet * RAISE_SIZES[action-2];
         return ss.str();
     }
@@ -1203,7 +1205,7 @@ std::string GameState::action_to_string(int action) const {
     
     if (rivr_history < 0b1000000000) {
         ss << RAISE_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " " << biggest_bet * RAISE_SIZES[action-2];
+        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
         return ss.str();
     }
     
@@ -1272,7 +1274,7 @@ void GameState::print_range(int action) const {
 
             InfoSet is = temp.to_information_set();
 
-            std::cout << strategy_sum[is.hash()] << "\n";
+            // std::cout << strategy_sum[is.hash()] << "\n";
 
             std::array<int, 2> row_col = pocket_id_to_row_col(temp.p_id(player));
             
@@ -1332,6 +1334,14 @@ GameState generate_random_initial_state() {
     gs.suitd = suit_cards[3];
 
     return gs;
+}
+
+GameState random_state_from_range(std::array<std::array<float, 36>, 36> range, std::array<int, 5> board_cards, float biggest_bet, float biggest_mutual_bet, float pot) {
+
+    GameState gs;
+
+    return gs;
+
 }
 
 void play_computer() {
@@ -1397,7 +1407,7 @@ void play_computer() {
                 // Computer's turn
                 int sampled_index = sample_action(average_strategy);
 
-                std::cout << "Computer turn. Sampled action: " << gs.action_to_string(gs.index_to_action(sampled_index)) << "\n**********************************************\n\n";
+                std::cout << "Computer turn. " << gs.action_to_string(gs.index_to_action(sampled_index)) << "\n**********************************************\n\n";
                 // std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
                 
                 gs.apply_index(sampled_index);
