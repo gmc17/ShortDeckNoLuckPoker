@@ -16,16 +16,16 @@ public:
 	size_t hash() const;
 
 	bool player;
-	int pocket_id;
-	uint32_t pflp_history;
-	uint32_t flop_history;
-	uint32_t turn_history;
-	uint32_t rivr_history;
-	bool flop_seen;
-	bool turn_seen;
-    bool rivr_seen;
-	int flop_bucket;
-	int turn_bucket;
-	int rivr_bucket;
+	uint8_t cr1;
+	uint8_t cr2;
+	uint8_t fp1;
+	uint8_t fp2;
+	uint8_t fp3;
+	uint8_t trn;
+	uint8_t rvr;
+	uint32_t pfp_history;
+	uint32_t flp_history;
+	uint32_t trn_history;
+	uint32_t rvr_history;
 	int num_actions;
 };

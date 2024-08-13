@@ -1,44 +1,44 @@
 #include <iostream>
 
 #include "game_state.h"
-#include "ars_table.h"
-#include "cfr.h"
 #include "constants.h"
-#include "ars_table.h"
 #include "info_set.h"
-#include "lbr.h"
+#include "best_response.h"
+#include "cfr.h"
+#include "tree.h"
+#include "tree_cfr.h"
 
 int main(int argc, char* argv[]) {
-    if (argc > 1) {
-        std::string arg = argv[1];
-        if (arg == "train") {
-            int iterations = 1000000;  // Default value
-            if (argc > 2) {
-                iterations = std::stoi(argv[2]);
-            }
-            std::cout << "Training for " << iterations << " iterations..." << std::endl;
-            as_mccfr(iterations);
-            std::cout << "Training complete." << std::endl;
-        } else if (arg == "play") {
-            play_computer();
-        } else if (arg == "generate-ars") {
-            std::cout << "Generating ARS table. This may take a while..." << std::endl;
-            generate_ars_tables();
-            std::cout << "ARS table generation complete. File 'ars_table.dat' created." << std::endl;
-        } else if (arg == "exploit") {
-            int hands = 1000;  // Default value
-            if (argc > 2) {
-                hands = std::stoi(argv[2]);
-            }
-            std::cout << "Calculating approximate exploitability over " << hands << " hands..." << std::endl;
-            calculate_exploitability(hands);
-        } else {
-            std::cout << "Invalid argument. Use 'train', 'play', 'generate-ars', or 'exploit'." << std::endl;
-        }
-    } else {
-        std::cout << "Usage: ./shortdeck [train <iterations>|play|generate-ars|exploit <hands>]" << std::endl;
-    }
-    return 0;
+    // if (argc > 1) {
+    //     std::string arg = argv[1];
+    //     if (arg == "train") {
+    //         int iterations = 1000000;  // Default value
+    //         if (argc > 2) {
+    //             iterations = std::stoi(argv[2]);
+    //         }
+    //         std::cout << "Training for " << iterations << " iterations..." << std::endl;
+    //         as_mccfr(iterations);
+    //         std::cout << "Training complete." << std::endl;
+    //     } else if (arg == "play") {
+    //         play_computer();
+    //     } else if (arg == "generate-ars") {
+    //         std::cout << "Generating ARS table. This may take a while..." << std::endl;
+    //         generate_ars_tables();
+    //         std::cout << "ARS table generation complete. File 'ars_table.dat' created." << std::endl;
+    //     } else if (arg == "exploit") {
+    //         int hands = 1000;  // Default value
+    //         if (argc > 2) {
+    //             hands = std::stoi(argv[2]);
+    //         }
+    //         std::cout << "Calculating approximate exploitability over " << hands << " hands..." << std::endl;
+    //         calculate_exploitability(hands);
+    //     } else {
+    //         std::cout << "Invalid argument. Use 'train', 'play', 'generate-ars', or 'exploit'." << std::endl;
+    //     }
+    // } else {
+    //     std::cout << "Usage: ./shortdeck [train <iterations>|play|generate-ars|exploit <hands>]" << std::endl;
+    // }
+    // return 0;
 
     // GameState gs;
 
@@ -96,7 +96,19 @@ int main(int argc, char* argv[]) {
 	//     //std::cout << random.rivr_hand_strength() << "\n\n";
     // }
 
-    
+    // std::vector<float> flop = calculate_flop_bucket_boundaries();
+    // std::vector<float> turn = calculate_turn_bucket_boundaries();
+    // std::vector<float> rivr = calculate_rivr_bucket_boundaries();
+	
+	// std::cout << "Flop: {";
+    // for (int i=0; i<FLOP_BUCKETS; i++) std::cout << flop[i] << "f, ";
+    // std::cout << "}\nTurn: {";
+    // for (int i=0; i<TURN_BUCKETS; i++) std::cout << turn[i] << "f, ";
+    // std::cout << "}\nRivr: {";
+	// for (int i=0; i<RIVR_BUCKETS; i++) std::cout << rivr[i] << "f, ";
+	// std::cout << "}";
+
+
 
     // for (int i=0; i<10; i++) {
     // 	GameState random = generate_random_initial_state();
@@ -160,33 +172,9 @@ int main(int argc, char* argv[]) {
 	//     } 
 	// }
 
-	// for (int i=0; i<TURN_BUCKETS; i++) std::cout << "River in bucket " << i << ": " << buckets[i] << "\n";
-
-	// as_mccfr(30000000);
-
-	// sample_games(5);
-
-	// GameState gs;
-	// gs.print_range(6);
-	// gs.apply_index(gs.action_to_index(6)); // call preflop
-	// gs.print_range(7);
-	// gs.apply_index(gs.action_to_index(7)); // check
-    // gs.apply_chance_action(32);
-    // gs.apply_chance_action(31);
-    // gs.apply_chance_action(30);
-    // gs.print_range(2); // range of bet pot on flop
-
-	for (int i=1; i<8; i++) {
-		GameState gs;
-	    gs.print_range(i);
-	}
-
-    // play_computer();
-
-	// load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+	
 
 	// for (int i=0; i<5; i++) {
-
 	// 	std::array<std::array<float, 36>, 36> range;
 	//     for (int r=0; r<36; r++) {
 	//     	for (int c=0; c<36; c++) {
@@ -194,29 +182,83 @@ int main(int argc, char* argv[]) {
 	//     	}	
 	//     }
 
-	// 	GameState gs = generate_random_initial_state();
-	// 	gs.apply_index(gs.action_to_index(7)); // call
-	// 	print_opponent_range(range);
-	// 	range = update_range(gs, 0, 0, 0, range);
-	// 	print_opponent_range(range);
-	// 	gs.apply_index(gs.action_to_index(1)); // check
-	// 	gs.apply_chance_action(32);
-	// 	gs.apply_chance_action(31);
-	// 	gs.apply_chance_action(30);
-	// 	gs.apply_index(gs.action_to_index(1)); // check
-	// 	range = update_range(gs, 3, 0, 0, range);
-	// 	print_opponent_range(range);
-	// 	gs.apply_index(gs.action_to_index(4)); // bet pot
-	// 	std::cout << "player: " << gs.player << "\n";
-	// 	int lbr = local_best_response(gs, 0, range);
+	//     std::array<int, 4> turn_cards = {0, 17, 7, 24};
+	//     int pot_size = 0;
 
-	// 	std::cout << gs.to_string() << "lbr index: " << lbr << "\n\n";
+	//     GameState gs = random_state_from_ranges(range, range, turn_cards, pot_size);
+	//     std::cout << gs.to_string() << "\n";
 	// }
 
-	// int hands = 50000;
-	// float approx_exploitability = calculate_exploitability(hands);
+	std::array<uint8_t, 5> board_cards = {1, 16, 21, 25, 0};	
+	float pot_size = 60.0f;
+    int iterations = 50;
 
-	// std::cout << "Average exploitability over " << hands << " hands: " << approx_exploitability << "\n"; 
+	GameState gs;
+	gs.fp1 = board_cards[0];
+	gs.fp2 = board_cards[1];
+	gs.fp3 = board_cards[2];
+	gs.trn = board_cards[3];
+	gs.pfp_history = 0b111001;
+	gs.flp_history = 0b1001;
+	gs.pot_size = pot_size;
+	gs.flp_seen = true;
+	gs.trn_seen = true;
+
+	Tree t = Tree(gs);
+
+	std::array<std::array<float, NUM_CARDS>, NUM_CARDS> range;
+	for (int r=0; r<NUM_CARDS; r++) range[r].fill(0.0f);
+
+	for (int c1=1; c1<=NUM_CARDS; c1++) {
+    	for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+			if (gs.has_card(c1) || gs.has_card(c2)) continue; 
+    		range[c1 - 1][c2 - 1] = 1.0f / (32.0f * 31.0f / 2.0f);
+    	}	
+    }
+
+    // generate_rank_table(gs);
+
+    std::cout << "Number of action nodes: " << count_nodes(gs) << "\n";
+
+    // print_opponent_reach_probabilities(range);
+
+	//as_mccfr(iterations, range, range, board_cards, pot_size);
+	// generate_rank_table();
+	// test_rank_table(gs);
+	//cfr_plus_parallel(iterations, range, range, board_cards, pot_size);
+	Tree tree = tree_cfr_plus_parallel(iterations, range, range, board_cards, pot_size);
+	tree_calculate_exploitability_fast(tree, range, range, board_cards, pot_size);
+
+
+    std::cout << "threads: " << std::thread::hardware_concurrency() << "\n";
+
+	// play_computer();
+
+	// as_mccfr(1000);
+
+	for (int k=0; k<7; k++) {
+		GameState gs;
+
+		gs.fp1 = board_cards[0];
+	    gs.fp2 = board_cards[1];
+	    gs.fp3 = board_cards[2];
+	    gs.trn = board_cards[3];
+	   	gs.pfp_history = 0b111001;
+	    gs.flp_history = 0b1001;
+	    gs.pot_size = pot_size;
+	    gs.flp_seen = true;
+	    gs.trn_seen = true;
+
+	    gs.apply_index(gs.action_to_index(2)); // 0.5x pot
+
+	    // gs.print_range_turn(k);
+	}
+
+
+
+	//calculate_exploitability(range, range, board_cards, pot_size);
+	// calculate_exploitability_fast(range, range, board_cards, pot_size);
+
 
     return 0;
 }

@@ -1,37 +1,21 @@
 #include "info_set.h"
 
 InfoSet::InfoSet(): player(false),
-                    pocket_id(0),
-                    pflp_history(0),
-                    flop_history(0),
-                    turn_history(0),
-                    rivr_history(0),
-                    flop_seen(false),
-                    turn_seen(false),
-                    rivr_seen(false),
-                    flop_bucket(0),
-                    turn_bucket(0),
-                    rivr_bucket(0),
+                    cr1(0),
+                    cr2(0),
+                    fp1(0),
+                    fp2(0),
+                    fp3(0),
+                    trn(0),
+                    rvr(0),
+                    pfp_history(0),
+                    flp_history(0),
+                    trn_history(0),
+                    rvr_history(0),
                     num_actions(0) {}
 
 std::string InfoSet::to_string() const {
     std::stringstream ss;
-
-    std::bitset<32> binary_pflp_history(pflp_history);
-    std::bitset<32> binary_flop_history(flop_history);
-    std::bitset<32> binary_turn_history(turn_history);
-    std::bitset<32> binary_rivr_history(rivr_history);
-
-    if (!flop_seen) ss << "Pocket id: " << pocket_id << "\n";
-    ss << "Pflp history: " << binary_pflp_history << "\n";
-    if (flop_seen) ss << "Flop history: " << binary_flop_history << "\n";
-    if (turn_seen) ss << "Turn history: " << binary_turn_history << "\n";
-    if (rivr_seen) ss << "Rivr history: " << binary_rivr_history << "\n";
-    if (flop_seen) ss << "Flop bucket:  " << flop_bucket << "\n";
-    if (turn_seen) ss << "Turn bucket:  " << turn_bucket << "\n";
-    if (rivr_seen) ss << "River bucket: " << rivr_bucket << "\n";
-    ss << "Hash: " << hash() << "\n";
-    
     return ss.str();
 }
 
@@ -44,17 +28,18 @@ inline void hash_combine(std::size_t& seed, const T& value) {
 size_t InfoSet::hash() const {
     size_t seed = 1234;
     
-    if (!flop_seen) hash_combine(seed, pocket_id);
-    hash_combine(seed, pflp_history);
-    hash_combine(seed, flop_history);
-    hash_combine(seed, turn_history << 1);
-    hash_combine(seed, rivr_history << 2);
-    hash_combine(seed, flop_seen << 1);
-    hash_combine(seed, turn_seen << 2);
-    hash_combine(seed, rivr_seen << 3);
-    hash_combine(seed, flop_bucket);
-    hash_combine(seed, turn_bucket << 4);
-    hash_combine(seed, rivr_bucket << 8);
+    if (fp3 == 0) hash_combine(seed, pocket_id(cr1, cr2));
+    else { hash_combine(seed, cr1); hash_combine(seed, cr2); }
+    
+    hash_combine(seed, fp1);
+    hash_combine(seed, fp2);
+    hash_combine(seed, fp3);
+    hash_combine(seed, trn);
+    hash_combine(seed, rvr);
+    hash_combine(seed, pfp_history);
+    hash_combine(seed, flp_history);
+    hash_combine(seed, trn_history);
+    hash_combine(seed, rvr_history);
 
     return seed % STRATEGY_ARRAY_SIZE;
 }

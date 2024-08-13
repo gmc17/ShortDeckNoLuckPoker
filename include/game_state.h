@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <stack>
 #include <array>
 #include <stdexcept>
 #include <initializer_list>
@@ -13,69 +14,17 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "constants.h"
 #include "info_set.h"
+
+extern int rank_table[NUM_CARDS][NUM_CARDS][NUM_CARDS][NUM_CARDS];
 
 class GameState {
 
 public:
 	/**
-	* @param 'suita' 32-bit integer representing cards in suit A:
-	*                		- Bits 0-8: Player 0's cards
-	*                		- Bits 9-17: Player 1's cards
-	*                		- Bits 18-26: Community cards (flop)
-	*                		- Bits 27-31: Unused
-	* 			     		- Note: 'Bit 0' is the rightmost bit
-	* @param 'suitb' same
-	* @param 'suitc' same
-	* @param 'suitd' same
-	* @param 'turn' 8-bit integer representing the turn card:
-	*              			- Bits 0-3: Card rank
-	*               		- Bits 4-5: Suit (00: a, 01: b, 10: c, 11: d)
-	*               		- Bits 6-7: Unused
-	* @param 'rivr' 8-bit integer representing the river card (same structure as turn)
-	* @param 'flop_history' 8-bit integer representing betting history on the flop:
-	*                       - Bit 0: Flag for flop appearance (0: not yet, 1: appeared)
-	* 					    - Bits 1-2: Player 0's initial action
-	* 						         -->  01: check
-	* 						         -->  10: bet
-	* 								 -->  11: fold (preflop)
-	*                       - Bits 3-4: Player 1's response
-	* 								 -->  01: check/call
-	* 	 						     -->  10: bet/raise
-	* 								 -->  11: fold
-	* 						- Bits 5-6: Player 0's response to bet/raise
-	* 						         -->  01: call
-	* 								 -->  10: raise (check raise)
-	* 								 -->  11: fold
-	*                       - Bit 7: Player 1's response to check raise
-	* 								 -->   1: call
-	* 								 -->   all 8 1's: fold
-	* @param 'turn_history' 8-bit integer representing betting history on the turn:
-	*                       - Bit 0: Flag for turn appearance (0: not yet, 1: appeared)
-	* 						- Bits 1-2: Player 0's action
-	* 								 -->  01: check
-	* 								 -->  10: bet
-	*                       - Bits 3-4: Player 1's response
-	* 								 -->  01: check
-	* 								 -->  10: call bet (if bet) or bet (if check)
-	*  								 -->  11: fold
-	*                       - Bits 5-7: Unused
-	* @param 'rivr_history' 8-bit integer representing betting history on the river:
-	* 						- Bit 0: Flag for river appearance (0: not yet, 1: appeared)
-	*                       - Bits 1-2: Player 0's initial action
-	* 						         -->  01: check
-	* 						         -->  10: bet
-	*                       - Bits 3-4: Player 1's response
-	* 								 -->  01: check/call
-	* 	 						     -->  10: bet/raise
-	*  								 -->  11: fold
-	* 						- Bits 5-6: Player 0's response to raise
-	* 						         -->  01: call
-	*  								 -->  11: fold
-	* 						- Bit 7: Player 1's response to check raise
-	* 								 -->   1: call
-	* 								 -->   all 8 1's: fold
-	* @param 'player' Boolean indicating the active player (false for small blind, true for big blind)
+	 * To be filled in
+	 * @param
 	*/
 
 	GameState();
@@ -84,49 +33,81 @@ public:
 	std::string to_string(bool verbose = false) const;
 	bool operator==(const GameState& other) const;
 
+	// Helpers
+	inline bool has_card(uint8_t card) const {
+		if ((card == fp1) ||
+        (card == fp2) ||
+        (card == fp3) ||
+        (card == trn) ||
+        (card == rvr) ||
+        (card == op1) ||
+        (card == op2) ||
+        (card == ip1) ||
+        (card == ip2))
+        	return true;
+    	return false;
+	}
+	int num_in_deck() const;
+
 	// Game logic
-	bool is_terminal() const;
 	bool is_chance() const;
+	bool is_fold() const;
 	int best_hand(bool p) const;
+	inline int best_hand_fast() const {
+		return rank_table[op1 - 1][op2 - 1][trn - 1][rvr - 1];
+	}
 	float showdown(bool p) const;
 	float utility(bool p) const;
+	float utility_with_precomputed_hand_ranks(int p_hand_rank, int o_hand_rank) const;
 
 	int index_to_action(int index) const;
 	std::string action_to_string(int action) const;
 	std::string histories_to_string() const;
 	int action_to_index(int action) const;
 	int num_actions() const;
-	int num_chance_actions() const;
 	void apply_index(int index);
-	void apply_chance_action(int actions);
-	// void undo();
+	void deal_card(uint8_t card);
+	void undo(bool prev_player, float prev_pot);
 
 	// CFR helpers
-	InfoSet to_information_set();
+	InfoSet to_information_set() const;
 	float rivr_hand_strength();
 	int p_id(bool p) const;
-	void print_range(int action) const;
+	void print_range(int index) const;
+	void print_range_turn(int index) const;
 	
 	bool player;
-	uint32_t suita;
-	uint32_t suitb;
-	uint32_t suitc;
-	uint32_t suitd;
-	uint8_t  turn;
-	uint8_t  rivr;
-	uint32_t pflp_history;
-	uint32_t flop_history;
-	uint32_t turn_history;
-	uint32_t rivr_history;
+	uint8_t op1;
+	uint8_t op2;
+	uint8_t ip1;
+	uint8_t ip2;
+	uint8_t fp1;
+	uint8_t fp2;
+	uint8_t fp3;
+	uint8_t trn;
+	uint8_t rvr;
+	uint32_t pfp_history;
+	uint32_t flp_history;
+	uint32_t trn_history;
+	uint32_t rvr_history;
+	bool flp_seen;
+	bool trn_seen;
+	bool rvr_seen;
+	bool is_terminal;
 	float pot_size;
-	float biggest_bet;
-	float biggest_mutual_bet;
-	bool flop_seen;
-	bool turn_seen;
-	bool rivr_seen;
+	std::stack<float> bets;
 };
 
 void play_computer();
 int ith_action(uint32_t history, int i);
 GameState generate_random_initial_state();
 std::array<int, 2> pocket_id_to_row_col(int id);
+inline int suit(uint8_t card) {
+	return (card-1)/9;
+}
+inline int rank(uint8_t card) {
+    return (card-1)%9;
+}
+
+void generate_rank_table(GameState state);
+void test_rank_table(GameState state);

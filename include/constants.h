@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <chrono>
 #include <random>
+#include <stack>
+#include <sstream>
 #define FIXED_FLOAT(x) std::fixed << std::setprecision(2) << (x)
 
 inline std::mt19937& get_random_generator() {
@@ -16,7 +18,7 @@ inline std::uniform_real_distribution<float>& get_uniform_distribution() {
     return dis;
 }
 inline std::uniform_int_distribution<> get_card_distribution() {
-    static thread_local std::uniform_int_distribution<> dis(0, 35);
+    static thread_local std::uniform_int_distribution<> dis(1, 36);
     return dis;
 }
 constexpr std::array<int, 36 * 36> generate_pocket_id_table() {
@@ -32,25 +34,41 @@ constexpr std::array<int, 36 * 36> generate_pocket_id_table() {
 }
 inline constexpr auto POCKET_ID_TABLE = generate_pocket_id_table();
 inline constexpr int pocket_id(int p1, int p2) noexcept {
-    return POCKET_ID_TABLE[p1 * 36 + p2];
+    return POCKET_ID_TABLE[(p1-1) * 36 + (p2-1)];
+}
+constexpr auto create_ones_array() {
+    std::array<std::array<float, 36>, 36> res = {};
+    for (auto& row : res) {
+        for (auto& elem : row) {
+            elem = 1.0f;
+        }
+    }
+    return res;
 }
 
 //****************************** CFR Parameters ******************************//
-static const size_t STRATEGY_ARRAY_SIZE = 30000007;
-static const float EPSILON = 0.05;
+static const size_t STRATEGY_ARRAY_SIZE = 5000007;
+static const float EPSILON = 0.05f;
 static const float TAU = 1000;
 static const float BETA = 1000000;
-static const uint8_t FLOP_BUCKETS = 20;
-static const uint8_t TURN_BUCKETS = 10;
-static const uint8_t RIVR_BUCKETS = 10;
-static const std::array<float, FLOP_BUCKETS> FLOP_BUCKETS_ARR = {0.277263f, 0.318031f, 0.345064f, 0.366392f, 0.386034f, 0.406617f, 0.42208f, 0.440187f, 0.456866f, 0.470568f, 0.485192f, 0.506205f, 0.536178f, 0.571026f, 0.60727f, 0.642738f, 0.676258f, 0.717659f, 0.820755f, 1.0f};
-static const std::array<float, TURN_BUCKETS> TURN_BUCKETS_ARR = {0.258352f, 0.309773f, 0.353553f, 0.40008f, 0.457418f, 0.538388f, 0.613087f, 0.696023f, 0.815798f, 1.0f};
-static const std::array<float, RIVR_BUCKETS> RIVR_BUCKETS_ARR = {0.0969943f, 0.202133f, 0.310652f, 0.408409f, 0.503422f, 0.611624f, 0.705702f, 0.798761f, 0.952471f, 1.0f};
+
+static const float DCFR_ALPHA = 1.5f;
+static const float DCFR_BETA = 0.0f;
+static const float DCFR_GAMMA = 2.0f;
+
+static const uint8_t FLOP_BUCKETS = 100;
+static const uint8_t TURN_BUCKETS = 100;
+static const uint8_t RIVR_BUCKETS = 100;
+static const std::array<float, FLOP_BUCKETS> FLOP_BUCKETS_ARR = {0.212586f, 0.236864f, 0.251572f, 0.265294f, 0.276199f, 0.287481f, 0.295916f, 0.303057f, 0.308807f, 0.317067f, 0.324064f, 0.329401f, 0.335334f, 0.339599f, 0.343856f, 0.348642f, 0.35223f, 0.35735f, 0.361062f, 0.365889f, 0.370129f, 0.375378f, 0.378068f, 0.382191f, 0.385437f, 0.389338f, 0.393295f, 0.398017f, 0.402075f, 0.406405f, 0.409611f, 0.412195f, 0.414821f, 0.417412f, 0.421604f, 0.425537f, 0.428851f, 0.43166f, 0.435117f, 0.438867f, 0.441477f, 0.443548f, 0.447451f, 0.450983f, 0.454905f, 0.457864f, 0.460301f, 0.462896f, 0.465963f, 0.468883f, 0.471795f, 0.474216f, 0.477504f, 0.481153f, 0.484019f, 0.488389f, 0.492385f, 0.49641f, 0.500369f, 0.503798f, 0.508693f, 0.51303f, 0.518054f, 0.525526f, 0.532714f, 0.54161f, 0.547067f, 0.554007f, 0.562147f, 0.568448f, 0.574701f, 0.585489f, 0.593985f, 0.601386f, 0.606892f, 0.612711f, 0.618749f, 0.625165f, 0.633094f, 0.642679f, 0.647095f, 0.652945f, 0.662958f, 0.670666f, 0.675811f, 0.681646f, 0.689697f, 0.697487f, 0.708952f, 0.717659f, 0.73385f, 0.745911f, 0.76757f, 0.79292f, 0.820826f, 0.841296f, 0.861318f, 0.876335f, 0.89612f, 1.0f};
+static const std::array<float, TURN_BUCKETS> TURN_BUCKETS_ARR = {0.15792f, 0.181003f, 0.194257f, 0.211569f, 0.222222f, 0.230939f, 0.238199f, 0.245676f, 0.252257f, 0.258352f, 0.262909f, 0.268748f, 0.2743f, 0.279793f, 0.284725f, 0.289351f, 0.295454f, 0.300089f, 0.305063f, 0.30929f, 0.312945f, 0.319309f, 0.324026f, 0.328403f, 0.332377f, 0.336509f, 0.340345f, 0.344653f, 0.348964f, 0.353541f, 0.35736f, 0.362574f, 0.367175f, 0.371891f, 0.37583f, 0.380299f, 0.384952f, 0.389689f, 0.395024f, 0.400592f, 0.406025f, 0.410353f, 0.417159f, 0.423963f, 0.429535f, 0.436939f, 0.441231f, 0.447428f, 0.453016f, 0.458613f, 0.465429f, 0.474227f, 0.483467f, 0.490076f, 0.497443f, 0.50498f, 0.513411f, 0.522663f, 0.532198f, 0.541255f, 0.54766f, 0.552462f, 0.558618f, 0.568591f, 0.577642f, 0.584744f, 0.591177f, 0.600037f, 0.606827f, 0.615556f, 0.623263f, 0.629845f, 0.638078f, 0.64654f, 0.652692f, 0.661541f, 0.67396f, 0.68085f, 0.689577f, 0.697372f, 0.706259f, 0.714556f, 0.725507f, 0.741262f, 0.757957f, 0.768685f, 0.780041f, 0.793564f, 0.800697f, 0.816833f, 0.828207f, 0.838228f, 0.852835f, 0.862706f, 0.869278f, 0.886263f, 0.892009f, 0.946426f, 0.964123f, 1.0f};
+static const std::array<float, RIVR_BUCKETS> RIVR_BUCKETS_ARR = {0.0107905f, 0.0201254f, 0.0299482f, 0.0395268f, 0.0485912f, 0.0545718f, 0.0677025f, 0.0765087f, 0.0888627f, 0.0969953f, 0.106989f, 0.118112f, 0.130495f, 0.137547f, 0.150257f, 0.162407f, 0.173653f, 0.182596f, 0.190947f, 0.200835f, 0.210978f, 0.219748f, 0.225634f, 0.233613f, 0.243688f, 0.252463f, 0.2599f, 0.275133f, 0.294297f, 0.311714f, 0.326977f, 0.33757f, 0.347697f, 0.356147f, 0.363269f, 0.372073f, 0.382862f, 0.393029f, 0.4009f, 0.40907f, 0.415611f, 0.421848f, 0.431871f, 0.43986f, 0.44975f, 0.46054f, 0.471763f, 0.48081f, 0.4942f, 0.506483f, 0.513647f, 0.525564f, 0.53884f, 0.552616f, 0.56375f, 0.572733f, 0.580203f, 0.587843f, 0.603704f, 0.61399f, 0.621144f, 0.633477f, 0.64604f, 0.656881f, 0.665088f, 0.673133f, 0.681325f, 0.691016f, 0.699762f, 0.70702f, 0.716738f, 0.721527f, 0.731067f, 0.745019f, 0.756321f, 0.76648f, 0.772362f, 0.772366f, 0.79141f, 0.798767f, 0.798779f, 0.810884f, 0.816545f, 0.81938f, 0.825674f, 0.832786f, 0.838951f, 0.852901f, 0.856927f, 0.862471f, 0.868417f, 0.883682f, 0.889364f, 0.901519f, 0.945114f, 0.951334f, 0.960516f, 0.964913f, 0.974751f, 1.0f};
 
 //****************************** Utility Constants ******************************//
-static const size_t NUM_ROUNDS = 3;
-static const size_t NUM_RANKS = 9900;
-static const size_t NUM_POCKET_PAIRS = 81;
+static const int NUM_ROUNDS = 3;
+static const int NUM_RANKS = 9900;
+static const int NUM_POCKET_PAIRS = 81;
+static const int NUM_CARDS = 36;
+static const int MAX_ACTIONS = 7;
 static const uint32_t STACK_SIZE = 100;
 static const std::array<std::string,  4> SUIT_NAMES = {"♠", "♥", "♦", "♣"};
 static const std::array<std::string, 13> CARD_NAMES = {"6", "7", "8", "9", "T", "J", "Q", "K", "A"};
@@ -62,3 +80,21 @@ static const std::array<float, 4> BET_SIZES = {0.5f, 0.75f, 1.0f, 2.0f};
 static const std::array<float, 4> RAISE_SIZES = {2.0f, 2.75f, 3.5f, 5.0f};
 static const std::array<std::string, 7> BET_ACTION_NAMES = {"Check", "Bet", "Bet", "Bet", "Bet", "All in", "Call"};
 static const std::array<std::string, 7> RAISE_ACTION_NAMES = {"Fold", "Raise", "Raise", "Raise", "Raise", "All in", "Call"};
+
+template<typename T>
+std::string stack_to_string(std::stack<T> s) {
+    std::stringstream ss;
+    std::vector<T> temp;
+    
+    while (!s.empty()) {
+        temp.push_back(s.top());
+        s.pop();
+    }
+    
+    for (int i=0; i<temp.size(); i++) {
+        ss << temp[i];
+        if (i != temp.size()-1) ss << ", ";
+    }
+
+    return ss.str();
+};

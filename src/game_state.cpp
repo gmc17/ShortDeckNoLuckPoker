@@ -1,261 +1,155 @@
 #include "game_state.h"
-#include "ars_table.h"
-#include "constants.h"
-#include "info_set.h"
 #include "cfr.h"
 
+int rank_table[NUM_CARDS][NUM_CARDS][NUM_CARDS][NUM_CARDS];
+
 GameState::GameState(): player(false),
-                        suita(0), 
-                        suitb(0), 
-                        suitc(0), 
-                        suitd(0),
-                        turn(0), 
-                        rivr(0),
-                        pflp_history(0), 
-                        flop_history(0), 
-                        turn_history(0), 
-                        rivr_history(0),
-                        pot_size(0.0f),
-                        biggest_bet(2.0f),
-                        biggest_mutual_bet(1.0f),
-                        flop_seen(false), 
-                        turn_seen(false),
-                        rivr_seen(false) {}
+                        op1(0), 
+                        op2(0), 
+                        ip1(0), 
+                        ip2(0),
+                        fp1(0), 
+                        fp2(0),
+                        fp3(0), 
+                        trn(0), 
+                        rvr(0), 
+                        pfp_history(0),
+                        flp_history(0),
+                        trn_history(0),
+                        rvr_history(0),
+                        flp_seen(false), 
+                        trn_seen(false),
+                        rvr_seen(false),
+                        is_terminal(false),
+                        pot_size(0.0f) 
+{
+    bets.push(0.0f);
+} 
 
 std::string GameState::to_string(bool verbose) const {
     std::stringstream ss;
-
-    std::array<uint32_t, 4> suits = {suita, suitb, suitc, suitd};
     
-    // Small blind cards
-    ss << "SB cards:   ";
+    // OOP player cards
+    ss << "OOP cards:    ";
+    if (op1 != 0 && op2 != 0) ss << CARD_NAMES[rank(op1)] << SUIT_NAMES[suit(op1)] << CARD_NAMES[rank(op2)] << SUIT_NAMES[suit(op2)];
 
-    for (int i=0; i<4; i++) {
-        std::vector<int> hole_cards;
-
-        for (int k=0; k<9; k++) {
-            if (suits[i] % 2) hole_cards.push_back(k);
-            suits[i] = suits[i] >> 1;
-        }
-
-        if (hole_cards.size() > 0) {
-            for (int j=0; j<hole_cards.size(); j++) {
-                ss << CARD_NAMES[hole_cards[j]] << SUIT_NAMES[i];
-            }
-        }
-    }
-    ss << "\n";
-
-    // Big blind cards
-    ss << "BB cards:   ";
-
-    for (int i=0; i<4; i++) {
-        std::vector<int> hole_cards;
-
-        for (int k=0; k<9; k++) {
-            if (suits[i] % 2) hole_cards.push_back(k);
-            suits[i] = suits[i] >> 1;
-        }
-
-        if (hole_cards.size() > 0) {
-            for (int j=0; j<hole_cards.size(); j++) {
-                ss << CARD_NAMES[hole_cards[j]] << SUIT_NAMES[i];
-            }
-        }
-    }
-    ss << "\n";
+    // IP player cards
+    ss << "\nIP cards:     ";
+    if (ip1 != 0 && ip2 != 0) ss << CARD_NAMES[rank(ip1)] << SUIT_NAMES[suit(ip1)] << CARD_NAMES[rank(ip2)] << SUIT_NAMES[suit(ip2)];
 
     // Flop cards
-    ss << "Flop cards: ";
+    ss << "\nFlop cards:   ";
+    if (flp_seen) ss << CARD_NAMES[rank(fp1)] << SUIT_NAMES[suit(fp1)] << CARD_NAMES[rank(fp2)] << SUIT_NAMES[suit(fp2)]
+                                                                                         << CARD_NAMES[rank(fp3)] << SUIT_NAMES[suit(fp3)];
+
+    // Turn
+    ss << "\nTurn card:    ";
+    if (trn_seen) ss << CARD_NAMES[rank(trn)] << SUIT_NAMES[suit(trn)];
     
-    for (int i=0; i<4; i++) {
-        std::vector<int> comm_cards;
-
-        for (int k=0; k<9; k++) {
-            if (suits[i] % 2) comm_cards.push_back(k);
-            suits[i] = suits[i] >> 1;
-        }
-
-        if (comm_cards.size() > 0) {
-            for (int j=0; j<comm_cards.size(); j++) {
-                ss << CARD_NAMES[comm_cards[j]] << SUIT_NAMES[i];
-            }
-        }
-    }
-    ss << "\n";
-
-    ss << "Turn card:  ";
-
-    if (turn_seen) {
-        int turn_rank = turn & 0b1111;
-        int turn_suit = (turn>>4) & 0b11;
-
-        ss << CARD_NAMES[turn_rank] << SUIT_NAMES[turn_suit];
-    }
-
-    ss << "\n";
-
-    ss << "River card: ";
-
-    if (rivr_seen) {
-        int rivr_rank = rivr & 0b1111;
-        int rivr_suit = (rivr>>4) & 0b11;
-
-        ss << CARD_NAMES[rivr_rank] << SUIT_NAMES[rivr_suit];
-    }
-
-    ss << "\n";
+    // River
+    ss << "\nRiver card:   ";
+    if (rvr_seen) ss << CARD_NAMES[rank(rvr)] << SUIT_NAMES[suit(rvr)];
 
     if (verbose) {
-        // ss << "Pflp history: " << history_to_string(pflp_history) << "\n";
-        // if (flop_seen) ss << "Flop history: " << history_to_string(flop_history) << "\n";
-        // if (turn_seen) ss << "Turn history: " << history_to_string(turn_history) << "\n";
-        // if (rivr_seen) ss << "Rivr history: " << history_to_string(rivr_history) << "\n";
+        // To be implemented
+        return ss.str();
     } else {
-        std::bitset<32> binary_pflp_history(pflp_history);
-        std::bitset<32> binary_flop_history(flop_history);
-        std::bitset<32> binary_turn_history(turn_history);
-        std::bitset<32> binary_rivr_history(rivr_history);
-        ss << "Pflp history: " << binary_pflp_history << "\n";
-        if (flop_seen) ss << "Flop history: " << binary_flop_history << "\n";
-        if (turn_seen) ss << "Turn history: " << binary_turn_history << "\n";
-        if (rivr_seen) ss << "Rivr history: " << binary_rivr_history << "\n";
+        std::bitset<32> binary_pfp_history(pfp_history);
+        std::bitset<32> binary_flp_history(flp_history);
+        std::bitset<32> binary_trn_history(trn_history);
+        std::bitset<32> binary_rvr_history(rvr_history);
+        ss << "\nPflp history: " << binary_pfp_history << "\n";
+        if (flp_seen) ss << "Flop history: " << binary_flp_history << "\n";
+        if (trn_seen) ss << "Turn history: " << binary_trn_history << "\n";
+        if (rvr_seen) ss << "Rivr history: " << binary_rvr_history << "\n";
     }
+
+    std::stack<float> temp = bets;
     
     ss << "Player:       " << player << "\n";
-    ss << "Biggest_bet:  " << biggest_bet << "\n";
-    ss << "Mutual_bet:   " << biggest_mutual_bet << "\n";
+    // ss << "Biggest_bet:  " << temp.top() << "\n";
+    // temp.pop();
+    // if (!temp.empty()) ss << "Mutual_bet:   " << temp.top() << "\n";
+
+    ss << "Bets:         " << stack_to_string(bets) << "\n";
+
     ss << "Pot_size:     " << pot_size << "\n";
     ss << "Num_actions:  " << num_actions() << "\n";
-    ss << "Is_terminal:  " << is_terminal() << "\n";
-    // ss << "p_id(0):      " << p_id(0) << "\n";
+    ss << "Is_terminal:  " << is_terminal << "\n";
     
     return ss.str();
 }
 
 bool GameState::operator==(const GameState& other) const {
     return player == other.player &&
-           suita == other.suita && 
-           suitb == other.suitb && 
-           suitc == other.suitc && 
-           suitd == other.suitd &&
-           turn == other.turn &&
-           rivr == other.rivr &&
-           pflp_history == other.pflp_history &&
-           flop_history == other.flop_history &&
-           turn_history == other.turn_history &&
-           rivr_history == other.rivr_history &&
+           op1 == other.op1 && 
+           op2 == other.op2 && 
+           ip1 == other.ip1 && 
+           ip2 == other.ip2 &&
+           fp1 == other.fp1 &&
+           fp2 == other.fp2 &&
+           fp3 == other.fp3 &&
+           trn == other.trn &&
+           rvr == other.rvr &&
+           pfp_history == other.pfp_history &&
+           flp_history == other.flp_history &&
+           trn_history == other.trn_history &&
+           rvr_history == other.rvr_history &&
            pot_size == other.pot_size &&
-           biggest_bet == other.biggest_bet &&
-           biggest_mutual_bet == other.biggest_mutual_bet &&
-           flop_seen == other.flop_seen &&
-           turn_seen == other.turn_seen &&
-           rivr_seen == other.rivr_seen;
-}
-
-bool GameState::is_terminal() const {
-
-    // Preflop terminals
-    if (((pflp_history & 0b111) == 1) && (pflp_history != 0b111001))
-        return true;
-
-    // Flop terminals
-    if (((flop_history & 0b111) == 1) && (flop_history != 0b1001) && (flop_history != 1)) 
-        return true;
-
-    // Turn terminals
-    if (((turn_history & 0b111) == 1) && (turn_history != 0b1001) && (turn_history != 1)) 
-        return true;
-
-    // River terminals
-    if ((((rivr_history & 0b111) == 1) && (rivr_history != 1)) || // fold or check-check
-         ((rivr_history & 0b111) == 0b111)) // call
-        return true;
-
-    // All-ins that have finished running out
-    if ((rivr_seen) &&
-       (((pflp_history & 0b111111) == 0b110111) || 
-        ((flop_history & 0b111111) == 0b110111) ||
-        ((turn_history & 0b111111) == 0b110111) ||
-        ((rivr_history & 0b111111) == 0b110111)))
-        return true;
-
-    return false;
+           flp_seen == other.flp_seen &&
+           trn_seen == other.trn_seen &&
+           rvr_seen == other.rvr_seen;
 }
 
 bool GameState::is_chance() const {
     //  Flop
-    if ((!flop_seen) && 
-       ((pflp_history == 0b111001) || (((pflp_history & 0b111) == 0b111) && ((pflp_history != 0b111)))))
+    if ((!flp_seen) && 
+       ((pfp_history == 0b111001) || (((pfp_history & 0b111) == 0b111) && ((pfp_history != 0b111)))))
         return true;
 
     //  Turn
-    if ((!turn_seen) &&
-       (((flop_history & 0b111) == 0b111) || ((flop_history & 0b111111) == 0b1001))) // no turn, but flop is done
+    if ((!trn_seen) &&
+       (((flp_history & 0b111) == 0b111) || ((flp_history & 0b111111) == 0b1001))) // no turn, but flop is done
         return true;
 
     //  River
-    if ((!rivr_seen) &&
-       (((turn_history & 0b111) == 0b111) || ((turn_history & 0b111111) == 0b1001))) // no river, but turn is done
+    if ((!rvr_seen) &&
+       (((trn_history & 0b111) == 0b111) || ((trn_history & 0b111111) == 0b1001))) // no river, but turn is done
         return true;
 
     //  All-in, call
-    if (!is_terminal() && 
-       (((pflp_history & 0b111111) == 0b110111) || 
-        ((flop_history & 0b111111) == 0b110111) ||
-        ((turn_history & 0b111111) == 0b110111)))
+    if (!is_terminal && 
+       (((pfp_history & 0b111111) == 0b110111) || 
+        ((flp_history & 0b111111) == 0b110111) ||
+        ((trn_history & 0b111111) == 0b110111)))
         return true;
 
     return false;
 }
 
 int GameState::best_hand(bool p) const {
-    uint16_t suita_player;
-    uint16_t suitb_player;
-    uint16_t suitc_player;
-    uint16_t suitd_player;
-
-    if (p==0) suita_player = suita & 0b111111111;
-    else suita_player = (suita>>9) & 0b111111111;
-    if (p==0) suitb_player = suitb & 0b111111111;
-    else suitb_player = (suitb>>9) & 0b111111111;
-    if (p==0) suitc_player = suitc & 0b111111111;
-    else suitc_player = (suitc>>9) & 0b111111111;
-    if (p==0) suitd_player = suitd & 0b111111111;
-    else suitd_player = (suitd>>9) & 0b111111111;
-
-    uint16_t suita_all = (suita>>18) | suita_player;
-    uint16_t suitb_all = (suitb>>18) | suitb_player;
-    uint16_t suitc_all = (suitc>>18) | suitc_player;
-    uint16_t suitd_all = (suitd>>18) | suitd_player;
-
-    if (turn_seen) {
-        int turn_rank = turn & 0b1111;
-        int turn_suit = (turn>>4) & 0b11;
-        
-        if (turn_suit == 0) suita_all |= (0b1<<turn_rank);
-        if (turn_suit == 0b1) suitb_all |= (0b1<<turn_rank);
-        if (turn_suit == 0b10) suitc_all |= (0b1<<turn_rank);
-        if (turn_suit == 0b11) suitd_all |= (0b1<<turn_rank);
-    }
+    std::array<uint16_t, 4> suits = {0, 0, 0, 0};
     
-    if (rivr_seen) {
-        int rivr_rank = rivr & 0b1111;
-        int rivr_suit = (rivr>>4) & 0b11;
-        
-        if (rivr_suit == 0) suita_all |= (0b1<<rivr_rank);
-        if (rivr_suit == 0b1) suitb_all |= (0b1<<rivr_rank);
-        if (rivr_suit == 0b10) suitc_all |= (0b1<<rivr_rank);
-        if (rivr_suit == 0b11) suitd_all |= (0b1<<rivr_rank);
-    }
+    uint8_t c1 = (p==0) ? op1 : ip1;
+    uint8_t c2 = (p==0) ? op2 : ip2;
+
+    suits[suit(c1)] |= (1U << rank(c1));
+    suits[suit(c2)] |= (1U << rank(c2));
+
+    if (fp1 > 0) suits[suit(fp1)] |= (1U << rank(fp1));
+    if (fp2 > 0) suits[suit(fp2)] |= (1U << rank(fp2));
+    if (fp3 > 0) suits[suit(fp3)] |= (1U << rank(fp3));
+
+    if (trn > 0) suits[suit(trn)] |= (1U << rank(trn));
+    if (rvr > 0) suits[suit(rvr)] |= (1U << rank(rvr));
 
     /************************* Straight flush *************************/
 
     for (int i=0; i<6; i++) {
-        if (((suita_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) ||
-            ((suitb_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) ||
-            ((suitc_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) || 
-            ((suitd_all & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i])) {
+        if (((suits[0] & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) ||
+            ((suits[1] & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) ||
+            ((suits[2] & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) || 
+            ((suits[3] & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i])) {
             return 900000 + (6-i)*10000;
         }
     }
@@ -266,18 +160,18 @@ int GameState::best_hand(bool p) const {
     int kicker = -1;
 
     for (int i=0; i<9; i++) {
-        if ((suita_all & SINGLE_MASKS[i]) && 
-            (suitb_all & SINGLE_MASKS[i]) &&
-            (suitc_all & SINGLE_MASKS[i]) &&
-            (suitd_all & SINGLE_MASKS[i])) {
-            best = i;
-            for (int k=8; k>=0; k--) {
+        if ((suits[0] & SINGLE_MASKS[i]) && 
+            (suits[1] & SINGLE_MASKS[i]) &&
+            (suits[2] & SINGLE_MASKS[i]) &&
+            (suits[3] & SINGLE_MASKS[i])) {
+            best = 9-i;
+            for (int k=0; k<9; k++) {
                 if ((k != i) && 
-                    ((suita_all & SINGLE_MASKS[k]) || 
-                     (suitb_all & SINGLE_MASKS[k]) ||
-                     (suitc_all & SINGLE_MASKS[k]) ||
-                     (suitd_all & SINGLE_MASKS[k]))) {
-                    kicker = k;
+                    ((suits[0] & SINGLE_MASKS[k]) || 
+                     (suits[1] & SINGLE_MASKS[k]) ||
+                     (suits[2] & SINGLE_MASKS[k]) ||
+                     (suits[3] & SINGLE_MASKS[k]))) {
+                    kicker = 9-k;
                     break;
                 }
             }
@@ -290,13 +184,11 @@ int GameState::best_hand(bool p) const {
     
     best = -1;
 
-    std::array<uint16_t, 4> suit_cards = {suita_all, suitb_all, suitc_all, suitd_all};
-
     for (int i=0; i<4; i++) {
-        if (__builtin_popcount(suit_cards[i]) >= 5) {
+        if (__builtin_popcount(suits[i]) >= 5) {
             // find highest card in the flush
             for (int k=0; k<9; k++) {
-                if (suit_cards[i] & SINGLE_MASKS[k]) {
+                if (suits[i] & SINGLE_MASKS[k]) {
                     best = 9-k;
                     break;
                 }
@@ -313,10 +205,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest trips
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
+        int count = ((suits[0] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[1] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[2] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[3] & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 3) {
             trips = 9-i;
             break;
@@ -327,10 +219,10 @@ int GameState::best_hand(bool p) const {
     if (trips != -1) {
         for (int i=0; i<9; i++) {
             if ((9-i) == trips) continue; // skip trips we already found
-            int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                        ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                        ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                        ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
+            int count = ((suits[0] & SINGLE_MASKS[i]) ? 1 : 0) +
+                        ((suits[1] & SINGLE_MASKS[i]) ? 1 : 0) +
+                        ((suits[2] & SINGLE_MASKS[i]) ? 1 : 0) +
+                        ((suits[3] & SINGLE_MASKS[i]) ? 1 : 0);
             if (count >= 2) {
                 pair = 9-i;
                 break;
@@ -342,7 +234,7 @@ int GameState::best_hand(bool p) const {
 
     /************************* Straight *************************/
 
-    uint16_t all_cards = suita_all | suitb_all | suitc_all | suitd_all;
+    uint16_t all_cards = suits[0] | suits[1] | suits[2] | suits[3];
 
     for (int i=0; i<6; i++) {
         if ((all_cards & STRAIGHT_MASKS[i]) == STRAIGHT_MASKS[i]) {
@@ -358,10 +250,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest trips
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
+        int count = ((suits[0] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[1] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[2] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[3] & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 3) {
             trips = 9-i;
             break;
@@ -395,10 +287,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest pairs
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
+        int count = ((suits[0] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[1] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[2] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[3] & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 2) {
             if (pair1==-1) {
                 pair1 = 9-i;
@@ -434,10 +326,10 @@ int GameState::best_hand(bool p) const {
 
     // Find highest pair
     for (int i=0; i<9; i++) {
-        int count = ((suita_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitb_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitc_all & SINGLE_MASKS[i]) ? 1 : 0) +
-                    ((suitd_all & SINGLE_MASKS[i]) ? 1 : 0);
+        int count = ((suits[0] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[1] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[2] & SINGLE_MASKS[i]) ? 1 : 0) +
+                    ((suits[3] & SINGLE_MASKS[i]) ? 1 : 0);
         if (count >= 2) {
             pair = 9-i;
             break;
@@ -470,8 +362,8 @@ int GameState::best_hand(bool p) const {
     kicker1 = -1;
     kicker2 = -1;
     kicker3 = -1;
-    kicker = -1;
-    pair = -1;
+    int kicker4 = -1;
+    int kicker5 = -1;
 
     // Find best kickers
     for (int i=0; i<9; i++) {
@@ -482,20 +374,20 @@ int GameState::best_hand(bool p) const {
                 kicker2 = 9-i;
             } else if (kicker3 == -1) {
                 kicker3 = 9-i;
-            } else if (kicker == -1) {
-                kicker = 9-i;
-            } else if (pair == -1) {
-                pair = 9-i;
+            } else if (kicker4 == -1) {
+                kicker4 = 9-i;
+            } else if (kicker5 == -1) {
+                kicker5 = 9-i;
                 break;
             }
         }
     }
 
-    if (kicker1 != -1 && kicker2 != -1 && kicker3 != -1 && kicker != -1 && pair != -1) {
-        return 100000 + kicker1*10000 + kicker2*1000 + kicker3*100 + kicker*10 + pair;
+    if (kicker1 != -1 && kicker2 != -1 && kicker3 != -1 && kicker4 != -1 && kicker5 != -1) {
+        return 100000 + kicker1*10000 + kicker2*1000 + kicker3*100 + kicker4*10 + kicker5;
     }
 
-    std::cout << "ERROR: NO BEST HAND\n";
+    std::cout << "ERROR: NO BEST HAND\n" << to_string() << "\n";
 
     return -1;
 }
@@ -511,186 +403,202 @@ float GameState::showdown(bool p) const {
 
 float GameState::utility(bool p) const {
     // Preflop fold
-    if (((pflp_history & 0b111) == 0b1) &&
-          pflp_history != 0b111001) return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
+    if (((pfp_history & 0b111) == 0b1) &&
+         (pfp_history != 0b111001)) return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
     // Fold on flop
-    if (((flop_history & 0b111) == 0b1) &&
-        (flop_history != 0b1001) &&
-        (flop_history != 0b1))
+    if (((flp_history & 0b111) == 0b1) &&
+        (flp_history != 0b1001) &&
+        (flp_history != 0b1))
         return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
     // Fold on turn
-    if (((turn_history & 0b111) == 0b1) &&
-        (turn_history != 0b1001) &&
-        (turn_history != 0b1))
+    if (((trn_history & 0b111) == 0b1) &&
+        (trn_history != 0b1001) &&
+        (trn_history != 0b1))
         return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
     // Fold on river
-    if (((rivr_history & 0b111) == 0b1) &&
-        (rivr_history != 0b1001) &&
-        (rivr_history != 0b1))
+    if (((rvr_history & 0b111) == 0b1) &&
+        (rvr_history != 0b1001) &&
+        (rvr_history != 0b1))
         return (p == player) ? -0.5f * pot_size : 0.5f * pot_size;
 
     // Check check on river
-    if ((rivr_history & 0b111111) == 0b1001) return showdown(p);
+    if ((rvr_history & 0b111111) == 0b1001) return showdown(p);
 
     // Call on river
-    if ((rivr_history & 0b111) == 0b111) return showdown(p);
+    if ((rvr_history & 0b111) == 0b111) return showdown(p);
 
     // All ins
-    if (((pflp_history & 0b111111) == 0b110111) || 
-        ((flop_history & 0b111111) == 0b110111) ||
-        ((turn_history & 0b111111) == 0b110111))
+    if (((pfp_history & 0b111111) == 0b110111) || 
+        ((flp_history & 0b111111) == 0b110111) ||
+        ((trn_history & 0b111111) == 0b110111))
         return showdown(p);
 
     return -1;
 }
 
+bool GameState::is_fold() const {
+    // Preflop fold
+    if (((pfp_history & 0b111) == 0b1) &&
+         (pfp_history != 0b111001)) return true;
+
+    // Fold on flop
+    if (((flp_history & 0b111) == 0b1) &&
+        (flp_history != 0b1001) &&
+        (flp_history != 0b1))
+        return true;
+
+    // Fold on turn
+    if (((trn_history & 0b111) == 0b1) &&
+        (trn_history != 0b1001) &&
+        (trn_history != 0b1))
+        return true;
+
+    // Fold on river
+    if (((rvr_history & 0b111) == 0b1) &&
+        (rvr_history != 0b1001) &&
+        (rvr_history != 0b1))
+        return true;
+    
+    return false;
+}
+
 int GameState::num_actions() const {
 
-    if (biggest_bet==100) return 2;
+    if (pot_size / 2.0f + bets.top() == STACK_SIZE) return 2;
     
     /************************* Preflop *************************/
 
-    if (pflp_history == 0) return 7; // open; can do anything 1-7
+    if (pfp_history == 0) return 7; // open; can do anything 1-7
     
-    if (pflp_history == 0b111) return 6; // call; can check or bet any size 1-6
+    if (pfp_history == 0b111) return 6; // call; can check or bet any size 1-6
     
-    if (((pflp_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!flop_seen))
+    if (((pfp_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!flp_seen))
          return 2;
     
-    if ((pflp_history < 0b1000000000) && // responding to raise; respond 1-7
-        (!flop_seen)) {
+    if ((pfp_history < 0b1000000000) && // responding to raise; respond 1-7
+        (!flp_seen)) {
         // raise
         int i=0;
-        while ((i < 4) && (pot_size / 2 + biggest_bet * RAISE_SIZES[i]) <= STACK_SIZE) i++;
+        while ((i < 4) && (pot_size / 2.0f + bets.top() * RAISE_SIZES[i]) < STACK_SIZE) i++;
         // 4-i is number of forbidden actions
         return 7-(4-i);
     } 
     
-    if ((pflp_history > 0b1000000000) && // bet/raise but at limit; 1 or 7
-        (pflp_history < 0b1111111111111) &&
-        (!flop_seen))
+    if ((pfp_history > 0b1000000000) && // bet/raise but at limit; 1 or 7
+        (pfp_history < 0b1111111111111) &&
+        (!flp_seen))
         return 2; 
 
     /************************* Flop *************************/
 
-    if ((flop_history == 0) || (flop_history == 1)) {
+    if ((flp_history == 0) || (flp_history == 1)) {
         int i=0;
-        while ((i < 4) && (pot_size / 2 + pot_size * BET_SIZES[i]) <= STACK_SIZE) i++;
+        while ((i < 4) && (pot_size / 2.0f + pot_size * BET_SIZES[i]) < STACK_SIZE) i++;
         return 6-(4-i); // 6 b/c you can't call
     }
     
-    if (((flop_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!turn_seen)) 
+    if (((flp_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!trn_seen)) 
          return 2; 
     
-    if ((flop_history < 0b1000000000) && // responding to raise; respond 1-7
-        (!turn_seen)) {
+    if ((flp_history < 0b1000000000) && // responding to raise; respond 1-7
+        (!trn_seen)) {
         // raise
         int i=0;
-        while ((i < 4) && (pot_size / 2 + biggest_bet * RAISE_SIZES[i]) <= STACK_SIZE) i++;
+        while ((i < 4) && (pot_size / 2.0f + bets.top() * RAISE_SIZES[i]) < STACK_SIZE) i++;
         return 7-(4-i);
     }
         
     
-    if ((flop_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (flop_history < 0b1111111111111) &&
-        (!turn_seen))
+    if ((flp_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (flp_history < 0b1111111111111) &&
+        (!trn_seen))
         return 2;
 
     /************************* Turn *************************/
 
-    if ((turn_history == 0) || (turn_history == 1)) { // open action; can do anything 1-7; overlap all-ins
+    if ((trn_history == 0) || (trn_history == 1)) { // open action; can do anything 1-7; overlap all-ins
         int i=0;
-        while ((i < 4) && (pot_size / 2 + pot_size * BET_SIZES[i]) <= STACK_SIZE) i++;
+        while ((i < 4) && (pot_size / 2.0f + pot_size * BET_SIZES[i]) < STACK_SIZE) i++;
         return 6-(4-i);
     } 
     
-    if (((turn_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!rivr_seen)) 
+    if (((trn_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!rvr_seen)) 
          return 2;
     
-    if ((turn_history < 0b1000000000) && // responding to raise; respond 1-7
-        (!rivr_seen)) {
+    if ((trn_history < 0b1000000000) && // responding to raise; respond 1-7
+        (!rvr_seen)) {
         int i=0;
-        while ((i < 4) && (pot_size / 2 + biggest_bet * RAISE_SIZES[i]) <= STACK_SIZE) i++;
+        while ((i < 4) && (pot_size / 2.0f + bets.top() * RAISE_SIZES[i]) < STACK_SIZE) i++;
         return 7-(4-i);
     }
         
-    
-    if ((turn_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (turn_history < 0b1111111111111) &&
-        (!rivr_seen))
+    if ((trn_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (trn_history < 0b1111111111111) &&
+        (!rvr_seen))
         return 2;
 
     /************************* River *************************/
 
-    if ((rivr_history == 0) || (rivr_history == 1)) { // open action / check; can do anything 1-7; overlap all-ins
+    if ((rvr_history == 0) || (rvr_history == 1)) { // open action / check; can do anything 1-7; overlap all-ins
         int i=0;
-        while ((i < 4) && (pot_size / 2 + pot_size * BET_SIZES[i]) <= STACK_SIZE) i++;
+        while ((i < 4) && (pot_size / 2.0f + pot_size * BET_SIZES[i]) < STACK_SIZE) i++;
         return 6-(4-i);
     }
     
-    if ((rivr_history & 0b111) == 0b110) // all-in; must fold or call 
+    if ((rvr_history & 0b111) == 0b110) // all-in; must fold or call 
         return 2; 
     
-    if (rivr_history < 0b1000000000) { // bet/raise; respond 1-7
+    if (rvr_history < 0b1000000000) { // bet/raise; respond 1-7
         int i=0;
-        while ((i < 4) && (pot_size / 2 + biggest_bet * RAISE_SIZES[i]) <= STACK_SIZE) i++;
+        while ((i < 4) && (pot_size / 2.0f + bets.top() * RAISE_SIZES[i]) < STACK_SIZE) i++;
         return 7-(4-i);
     }
 
-    if ((rivr_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (rivr_history < 0b1111111111111))
+    if ((rvr_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (rvr_history < 0b1111111111111))
         return 2;
     
-    return -1;
+    return 0;
 }
 
-int GameState::num_chance_actions() const {
-    //  Flop
-    if ((!flop_seen) && 
-        (pflp_history > 0)) {
-        return 36 - (__builtin_popcount(suita) + __builtin_popcount(suitb) + __builtin_popcount(suitc) + __builtin_popcount(suitd));
-    }
-
-    //  Turn
-    if ((!turn_seen) &&
-        (flop_history > 0))
-        return 29;
+int GameState::num_in_deck() const {
+    int res = 0;
     
-    //  River
-    if ((!rivr_seen) &&
-        (turn_history > 0))               
-        return 28;
+    if (op1 != 0) res++;
+    if (op2 != 0) res++;
+    if (ip1 != 0) res++;
+    if (ip2 != 0) res++;
+    if (fp1 != 0) res++;
+    if (fp2 != 0) res++;
+    if (fp3 != 0) res++;
+    if (trn != 0) res++;
+    if (rvr != 0) res++;
 
-    //  All-ins
-    if (!flop_seen) return 32;
-    if (!turn_seen) return 29;
-    if (!rivr_seen) return 28;
-
-    return 0;
+    return NUM_CARDS-res;
 }
 
 int GameState::index_to_action(int index) const {
 
-    if (biggest_bet == STACK_SIZE) return (index == 0) ? 1 : 7;
+    if (pot_size / 2.0f + bets.top() == STACK_SIZE) return (index == 0) ? 1 : 7;
     
     /************************* Preflop *************************/
     
-    if (pflp_history == 0) return index+1; // open; can do anything 1-7
+    if (pfp_history == 0) return index+1; // open; can do anything 1-7
     
-    if (pflp_history == 0b111) return index+1; // call; can check or bet any size 1-6
+    if (pfp_history == 0b111) return index+1; // call; can check or bet any size 1-6
     
-    if (((pflp_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!flop_seen)) 
+    if (((pfp_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!flp_seen)) 
         return (index == 0) ? 1 : 7;
     
-    if ((pflp_history < 0b1000000000) && // bet/raise; respond 1-7
-        (!flop_seen)) {
+    if ((pfp_history < 0b1000000000) && // bet/raise; respond 1-7
+        (!flp_seen)) {
         int num = num_actions();
         int num_banned = 7-num;
 
@@ -698,14 +606,14 @@ int GameState::index_to_action(int index) const {
         if (index >  4-num_banned) return index+num_banned+1;
     }
     
-    if ((pflp_history > 0b1000000000) && // bet/raise but at limit; 1 or 7
-        (pflp_history < 0b1111111111111) &&
-        (!flop_seen))
+    if ((pfp_history > 0b1000000000) && // bet/raise but at limit; 1 or 7
+        (pfp_history < 0b1111111111111) &&
+        (!flp_seen))
         return (index == 0) ? 1 : 7; 
 
     /************************* Flop *************************/
     
-    if ((flop_history == 0) || (flop_history == 1)) {
+    if ((flp_history == 0) || (flp_history == 1)) {
         int num = num_actions();
         int num_banned = 6-num;
 
@@ -713,12 +621,12 @@ int GameState::index_to_action(int index) const {
         if (index >  4-num_banned) return index+num_banned+1;
     } 
     
-    if (((flop_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!turn_seen)) 
+    if (((flp_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!trn_seen)) 
         return (index == 0) ? 1 : 7;
     
-    if ((flop_history < 0b1000000000) && // bet/raise; respond 1-7
-        (!turn_seen)) {
+    if ((flp_history < 0b1000000000) && // bet/raise; respond 1-7
+        (!trn_seen)) {
         int num = num_actions();
         int num_banned = 7-num;
 
@@ -726,14 +634,14 @@ int GameState::index_to_action(int index) const {
         if (index >  4-num_banned) return index+num_banned+1;
     } 
     
-    if ((flop_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (flop_history < 0b1111111111111) &&
-        (!turn_seen))
+    if ((flp_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (flp_history < 0b1111111111111) &&
+        (!trn_seen))
         return (index == 0) ? 1 : 7;
 
     /************************* Turn *************************/
     
-    if ((turn_history == 0) || (turn_history == 1)) {
+    if ((trn_history == 0) || (trn_history == 1)) {
         int num = num_actions();
         int num_banned = 6-num;
 
@@ -741,12 +649,12 @@ int GameState::index_to_action(int index) const {
         if (index >  4-num_banned) return index+num_banned+1;
     }
     
-    if (((turn_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!rivr_seen)) 
+    if (((trn_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!rvr_seen)) 
         return (index == 0) ? 1 : 7;
     
-    if ((turn_history < 0b1000000000) && // bet/raise; respond 1-7
-        (!rivr_seen)) {
+    if ((trn_history < 0b1000000000) && // bet/raise; respond 1-7
+        (!rvr_seen)) {
         int num = num_actions();
         int num_banned = 7-num;
 
@@ -754,14 +662,14 @@ int GameState::index_to_action(int index) const {
         if (index >  4-num_banned) return index+num_banned+1;
     }
     
-    if ((turn_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (turn_history < 0b1111111111111) &&
-        (!rivr_seen))
+    if ((trn_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (trn_history < 0b1111111111111) &&
+        (!rvr_seen))
         return (index == 0) ? 1 : 7;
 
     /************************* River *************************/
 
-    if ((rivr_history == 0) || (rivr_history == 1)) {
+    if ((rvr_history == 0) || (rvr_history == 1)) {
         int num = num_actions();
         int num_banned = 6-num;
 
@@ -769,10 +677,10 @@ int GameState::index_to_action(int index) const {
         if (index >  4-num_banned) return index+num_banned+1;
     }  
     
-    if ((rivr_history & 0b111) == 0b110) // all-in; must fold or call 
+    if ((rvr_history & 0b111) == 0b110) // all-in; must fold or call 
         return (index == 0) ? 1 : 7;
     
-    if (rivr_history < 0b1000000000) {
+    if (rvr_history < 0b1000000000) {
         int num = num_actions();
         int num_banned = 7-num;
 
@@ -780,241 +688,230 @@ int GameState::index_to_action(int index) const {
         if (index >  4-num_banned) return index+num_banned+1;
     }
     
-    if ((rivr_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (rivr_history < 0b1111111111111))
+    if ((rvr_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (rvr_history < 0b1111111111111))
         return (index == 0) ? 1 : 7;
 
-    return -1;
+    return 0;
 }
 
 int GameState::action_to_index(int action) const {
-    for (int i=0; i<7; i++) {
+    for (uint8_t i=0; i<7; i++) {
         if (index_to_action(i) == action) {
             return i;
         }
     }
-    return -1;
+    return 0;
 }
 
 void GameState::apply_index(int index) {
 
-    int a = index_to_action(index);
+    uint8_t a = index_to_action(index);
 
     player = !player; // player alternates
 
     if (a == 7) { // call
-        biggest_mutual_bet = biggest_bet;
-        if (flop_seen || turn_seen || rivr_seen) {
-            pot_size += 2 * biggest_mutual_bet;
-            biggest_bet = 0;
-            biggest_mutual_bet = 0;
-        }
+        bets.push(bets.top());
+        pot_size += 2.0f * bets.top();
+        if (rvr_seen) is_terminal = true;
     }
    
     else if ((a >= 2) && (a <= 5)) {
-        if (biggest_bet == 0) {
+        if (bets.top() == 0.0f) {
             // bet
-            biggest_bet = pot_size * BET_SIZES[a-2];
+            bets.push(pot_size * BET_SIZES[a-2]);
         } else {
             // raise
-            biggest_mutual_bet = biggest_bet;
-            biggest_bet *= RAISE_SIZES[a-2];
+            bets.push(bets.top() * RAISE_SIZES[a-2]);
         }
     }
 
-    else if (a == 6) biggest_bet = STACK_SIZE - (pot_size / 2);
+    else if (a == 6) bets.push(STACK_SIZE - (pot_size / 2.0f));
 
     else if (a == 1) {
-        if (!flop_seen) {
-            if ((pflp_history != 0b111)) { // can't be a check. must be fold
-                pot_size += biggest_mutual_bet * 2;
-                biggest_bet = 0;
-                biggest_mutual_bet = 0;
+        if (!flp_seen) {
+            if ((pfp_history != 0b111)) { // can't be a check. must be fold
+                float unmatched_bet = bets.top();
+                bets.pop();
+                pot_size += 2.0f * bets.top(); // this is the biggest mutual bet
+                bets.push(unmatched_bet); // preserve bets for printing purposes
                 player = !player;
+                is_terminal = true;
+                bets.push(0.0f);
+            } else {
+                bets.push(0.0f); // check. pushing this will make it easier to undo actions
             }
-        } else if (!turn_seen) {
-            if ((flop_history != 0) && (flop_history != 0b1)) { // not check or check-check. must be a fold
-                pot_size += biggest_mutual_bet * 2;
-                biggest_bet = 0;
-                biggest_mutual_bet = 0;
+        } else if (!trn_seen) {
+            if ((flp_history != 0) && (flp_history != 0b1)) { // not check or check-check. must be a fold
+                float unmatched_bet = bets.top();
+                bets.pop();
+                pot_size += 2.0f * bets.top();
+                bets.push(unmatched_bet);
                 player = !player;
+                is_terminal = true;
+                bets.push(0.0f);
+            } else {
+                bets.push(0.0f);
             }
-        } else if (!rivr_seen) {
-            if ((turn_history != 0) && (turn_history != 0b1)) {
-                pot_size += biggest_mutual_bet * 2;
-                biggest_bet = 0;
-                biggest_mutual_bet = 0;
+        } else if (!rvr_seen) {
+            if ((trn_history != 0) && (trn_history != 0b1)) {
+                float unmatched_bet = bets.top();
+                bets.pop();
+                pot_size += 2.0f * bets.top();
+                bets.push(unmatched_bet);
                 player = !player;
+                is_terminal = true;
+                bets.push(0.0f);
+            } else {
+                bets.push(0.0f);
             }
         } else {
-            if ((rivr_history != 0) && (rivr_history != 0b1)) {
-                pot_size += biggest_mutual_bet * 2;
-                biggest_bet = 0;
-                biggest_mutual_bet = 0;
+            if ((rvr_history != 0) && (rvr_history != 0b1)) {
+                float unmatched_bet = bets.top();
+                bets.pop();
+                pot_size += 2.0f * bets.top();
+                bets.push(unmatched_bet);
                 player = !player;
+                is_terminal = true;
+                bets.push(0.0f);
+            } else if (rvr_history == 0b1) { 
+                bets.push(0.0f);
+                is_terminal = true; // check check is terminal on river
+            } else {
+                bets.push(0.0f);
             }
         }
     }
     
     /************************* Preflop *************************/
 
-    if (!flop_seen) {
-        pflp_history = (pflp_history << 3) | a;
+    if (!flp_seen) {
+        pfp_history = (pfp_history << 3) | a;
         return;
     }
 
     /************************* Flop *************************/
 
-    if (!turn_seen) {
-        flop_history = (flop_history << 3) | a;
+    if (!trn_seen) {
+        flp_history = (flp_history << 3) | a;
         return;
     }
 
     /************************* Turn *************************/
 
-    if (!rivr_seen) {
-        turn_history = (turn_history << 3) | a;
+    if (!rvr_seen) {
+        trn_history = (trn_history << 3) | a;
         return;
     }
 
     /************************* River *************************/
 
-    rivr_history = (rivr_history << 3) | a;
+    rvr_history = (rvr_history << 3) | a;
 }
 
-// void GameState::undo() {
-//     if (rivr_seen) {
-//         if (rivr_history > 0) {
-//             rivr_history >>= 3; // every action is 3 bits long
-//             return;
-//         } else if (rivr_history == 0) {
-//             rivr = 0;
-//             return;
-//         }
-//     }
+void GameState::undo(bool prev_player, float prev_pot) {
+    is_terminal = false;
+    player = prev_player;
+    pot_size = prev_pot;
+    bets.pop();
 
-//     if (turn_seen) {
-//         if (turn_history > 0) {
-//             turn_history >>= 3;
-//             return;
-//         } else if (turn_history == 0) {
-//             turn = 0;
-//             return;
-//         }
-//     }
-
-//     if (flop_seen) {
-//         if (flop_history > 0) {
-//             flop_history >>= 3; // every action is 3 bits long
-//             return;
-//         } else if (flop_history == 0) {
-//             uint32_t mask = 0b111111111111111111;
-//             suita &= mask;
-//             suitb &= mask;
-//             suitc &= mask;
-//             suitd &= mask;
-//             return;
-//         }
-//     }
-
-//     if (!flop_seen) {
-//         if (pflp_history > 0) {
-//             pflp_history >>= 3;
-//             return;
-//         }
-//     }
-// }
-
-void GameState::apply_chance_action(int actions) {
-
-    uint16_t suita_all = ((suita>>18) | (suita>>9) | suita) & 0b111111111;
-    uint16_t suitb_all = ((suitb>>18) | (suitb>>9) | suitb) & 0b111111111;
-    uint16_t suitc_all = ((suitc>>18) | (suitc>>9) | suitc) & 0b111111111;
-    uint16_t suitd_all = ((suitd>>18) | (suitd>>9) | suitd) & 0b111111111;
-
-    if (turn_seen) {
-        int turn_rank = turn & 0b1111;
-        int turn_suit = (turn>>4) & 0b11;
-        
-        if (turn_suit == 0) suita_all |= (0b1<<turn_rank);
-        if (turn_suit == 0b1) suitb_all |= (0b1<<turn_rank);
-        if (turn_suit == 0b10) suitc_all |= (0b1<<turn_rank);
-        if (turn_suit == 0b11) suitd_all |= (0b1<<turn_rank);
+    // Chance actions
+    if (flp_seen && (flp_history==0)) {
+        fp3=0; 
+        flp_seen=false;
+        return;
     }
 
-    std::array<uint16_t, 4> suit_cards = {suita_all, suitb_all, suitc_all, suitd_all};
-
-    int k;
-    bool acted = false;
-
-    while (acted == false) {
-        k = get_card_distribution()(get_random_generator());
-        if (!((suit_cards[k/9] & SINGLE_MASKS[k%9])==SINGLE_MASKS[k%9])) {
-            if (k/9==0 && actions>=30) suita = suita | (SINGLE_MASKS[k%9]<<18);
-            if (k/9==1 && actions>=30) suitb = suitb | (SINGLE_MASKS[k%9]<<18);
-            if (k/9==2 && actions>=30) suitc = suitc | (SINGLE_MASKS[k%9]<<18);
-            if (k/9==3 && actions>=30) suitd = suitd | (SINGLE_MASKS[k%9]<<18);
-
-            acted = true;
-        }
+    if ((fp2!=0) && (flp_history==0)) {
+        fp2=0; 
+        return;
     }
 
-    if (actions>30) {
-        flop_seen = false;
+    if ((fp1!=0) && (flp_history==0)) {
+        fp1=0;
+        return;
     }
 
-    if (actions==30) {
-        flop_seen = true;
+    if (trn_seen && (trn_history==0)) {
+        trn=0;
+        trn_seen=false;
+        return;
+    }
+
+    if (rvr_seen && (rvr_history==0)) {
+        rvr=0;
+        rvr_seen=false;
+        return;
+    }
+
+    // Actual actions
+    if (rvr_history != 0) {
+        rvr_history >>= 3;
+        return;
     } 
 
-    if (actions==29) {
-        turn = ((k/9)<<4) | (8-(k%9));
-        turn_seen = true;
+    if (trn_history != 0) {
+        trn_history >>= 3;
+        return;
     }
 
-    if (actions==28) {
-        rivr = ((k/9)<<4) | (8-(k%9));
-        rivr_seen = true;
+    if (flp_history != 0) {
+        flp_history >>= 3;
+        return;
+    }
+
+    if (pfp_history != 0) {
+        pfp_history >>= 3;
+        return;
+    }
+}
+
+void GameState::deal_card(uint8_t card) {
+    if (has_card(card)) throw std::runtime_error("Card already dealt");
+
+    // if (op1 == 0) op1 = card;
+    // else if (op2 == 0) op2 = card;
+    // else if (ip1 == 0) ip1 = card;
+    // else if (ip2 == 0) ip2 = card;
+
+    if (fp1 == 0) fp1 = card;
+    else if (fp2 == 0) fp2 = card;
+    else if (fp3 == 0) fp3 = card, flp_seen = true;
+    else if (trn == 0) trn = card, trn_seen = true;
+    else if (rvr == 0) {
+        rvr = card;
+        rvr_seen = true;
+        if (((pfp_history & 0b111111) == 0b110111) || 
+            ((flp_history & 0b111111) == 0b110111) ||
+            ((trn_history & 0b111111) == 0b110111) ||
+            ((rvr_history & 0b111111) == 0b110111))
+            is_terminal = true; // all-ins that have run out
     }
 
     player = 0;
-    pot_size += 2 * biggest_mutual_bet;
-    biggest_bet = 0;
-    biggest_mutual_bet = 0;
+    bets.push(0.0f);
 }
 
-InfoSet GameState::to_information_set() {
-    int p = p_id(player);
-
+InfoSet GameState::to_information_set() const {
     InfoSet is;
-    is.player = player;
-    is.pflp_history = pflp_history;
-    is.flop_history = flop_history; 
-    is.turn_history = turn_history; 
-    is.rivr_history = rivr_history;
-    is.flop_seen = flop_seen;
-    is.turn_seen = turn_seen;
-    is.rivr_seen = rivr_seen;
-    is.num_actions = num_actions();
-    is.pocket_id = p;
-    
-    bool rivr_seen_temp = rivr_seen;
-    bool turn_seen_temp = turn_seen;
-    
-    if (flop_seen) {
-        rivr_seen = false;
-        turn_seen = false;
-        is.flop_bucket = ars_to_bucket_flop(ars_table(0, best_hand(player)/100, p));
-        turn_seen = turn_seen_temp;
-        if (turn_seen) {
-            is.turn_bucket = ars_to_bucket_turn(ars_table(1, best_hand(player)/100, p));
-            rivr_seen = rivr_seen_temp;
-            if (rivr_seen) is.rivr_bucket = ars_to_bucket_rivr(ars_table(2, best_hand(player)/100, p));
-        }
-    }
 
-    turn_seen = turn_seen_temp;
-    rivr_seen = rivr_seen_temp;
+    is.player = player;
+
+    is.cr1 = (player == 0) ? op1 : ip1;
+    is.cr2 = (player == 0) ? op2 : ip2;
+    
+    is.fp1 = fp1;
+    is.fp2 = fp2;
+    is.fp3 = fp3;
+    is.trn = trn;
+    is.rvr = rvr;
+
+    is.pfp_history = pfp_history;
+    is.flp_history = flp_history; 
+    is.trn_history = trn_history; 
+    is.rvr_history = rvr_history;
+
+    is.num_actions = num_actions();
 
     return is;
 }
@@ -1024,64 +921,30 @@ float GameState::rivr_hand_strength() {
     float wins = 0.0f;
     float total = 0.0f;
 
-    suita &= 0b111111111000000000111111111;
-    suitb &= 0b111111111000000000111111111;
-    suitc &= 0b111111111000000000111111111;
-    suitd &= 0b111111111000000000111111111;
+    ip1 = 0;
+    ip2 = 0;
 
-    uint16_t suita_all = ((suita>>18) | (suita>>9) | suita) & 0b111111111;
-    uint16_t suitb_all = ((suitb>>18) | (suitb>>9) | suitb) & 0b111111111;
-    uint16_t suitc_all = ((suitc>>18) | (suitc>>9) | suitc) & 0b111111111;
-    uint16_t suitd_all = ((suitd>>18) | (suitd>>9) | suitd) & 0b111111111;
+    for (int c1=1; c1<=NUM_CARDS; c1++) {
+        for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+            if (has_card(c1) || has_card(c2)) continue;
+            if (c1==c2) continue;
 
-    std::array<uint16_t, 4> suit_cards_all = {suita_all, suitb_all, suitc_all, suitd_all};
+            ip1 = c1;
+            ip2 = c2;
 
-    int turn_rank = turn & 0b1111;
-    int turn_suit = (turn>>4) & 0b11;
-    suit_cards_all[turn_suit] |= (0b1<<turn_rank);
+            trn_seen = true;
+            rvr_seen = true;
 
-    int rivr_rank = rivr & 0b1111;
-    int rivr_suit = (rivr>>4) & 0b11;
-    suit_cards_all[rivr_suit] |= (0b1<<rivr_rank);
+            int op_best = best_hand(0);
+            int ip_best = best_hand(1);
 
-    for (int c1=0; c1<36; c1++) {
-        for (int c2=c1+1; c2<36; c2++) {
-            if ((c2!=c1) &&
-                (!((suit_cards_all[c1/9] & SINGLE_MASKS[8-(c1%9)])==SINGLE_MASKS[8-(c1%9)])) &&
-                (!((suit_cards_all[c2/9] & SINGLE_MASKS[8-(c2%9)])==SINGLE_MASKS[8-(c2%9)]))) {
-
-                std::array<uint32_t, 4> suit_cards = {suita, suitb, suitc, suitd};
-                uint32_t tempa = suita;
-                uint32_t tempb = suitb;
-                uint32_t tempc = suitc;
-                uint32_t tempd = suitd;
-
-                suit_cards[c1/9] |= (0b1 << (9+(c1%9)));
-                suit_cards[c2/9] |= (0b1 << (9+(c2%9)));
-                turn_seen = true;
-                rivr_seen = true;
-                
-                suita = suit_cards[0];
-                suitb = suit_cards[1];
-                suitc = suit_cards[2];
-                suitd = suit_cards[3];
-
-                int player_best = best_hand(0);
-                int opponent_best = best_hand(1);
-
-                if (player_best > opponent_best) {
-                    wins += 1.0f;   
-                } else if (player_best == opponent_best) {
-                    wins += 0.5f;
-                }
-
-                total += 1;
-
-                suita = tempa;
-                suitb = tempb;
-                suitc = tempc;
-                suitd = tempd;
+            if (op_best > ip_best) {
+                wins += 1.0f;   
+            } else if (op_best == ip_best) {
+                wins += 0.5f;
             }
+
+            total += 1.0f;
         }
     }
 
@@ -1089,128 +952,113 @@ float GameState::rivr_hand_strength() {
 }
 
 int GameState::p_id(bool p) const {
-    std::array<uint32_t, 4> player_cards;
-
-    if (p==0) player_cards = {(suita & 0b111111111), (suitb & 0b111111111), (suitc & 0b111111111), (suitd & 0b111111111)};
-    if (p==1) player_cards = {((suita>>9) & 0b111111111), ((suitb>>9) & 0b111111111), ((suitc>>9) & 0b111111111), ((suitd>>9) & 0b111111111)};
-
-    int p1 = -1;
-    int p2 = -1;
-
-    for (int k=0; k<36; k++) {
-        if (player_cards[k/9] & (0b1<<(k%9))) {
-            if (p1==-1) p1=k;
-            else if (p2==-1) p2=k;
-        }
-    }
-
-    return pocket_id(p1, p2);
+    return (p==0) ? pocket_id(op1, op2) : pocket_id(ip1, ip2);
 }
 
 std::string GameState::action_to_string(int action) const {
 
     std::stringstream ss;
 
-    if (biggest_bet == 100) return (action == 1) ? "Fold" : "Call";
+    if (pot_size / 2.0f + bets.top() == STACK_SIZE) return (action == 1) ? "Fold" : "Call";
     
     /************************* Preflop *************************/
     
-    if (pflp_history == 0) {
+    if (pfp_history == 0) {
         ss << RAISE_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
+        if ((action >= 2) && (action<=5)) ss << " to " << bets.top() * RAISE_SIZES[action-2];
         return ss.str();
     }
     
-    if (pflp_history == 0b111) {
+    if (pfp_history == 0b111) {
         if (action == 1) return "Check";
         ss << RAISE_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
+        if ((action >= 2) && (action<=5)) ss << " to " << bets.top() * RAISE_SIZES[action-2];
         return ss.str();
     }
     
-    if (((pflp_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!flop_seen)) 
+    if (((pfp_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!flp_seen)) 
         return (action == 1) ? "Fold" : "Call";
     
-    if ((pflp_history < 0b1000000000) && // bet/raise; respond 1-7
-        (!flop_seen)) {
+    if ((pfp_history < 0b1000000000) && // bet/raise; respond 1-7
+        (!flp_seen)) {
         ss << RAISE_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
+        if ((action >= 2) && (action<=5)) ss << " to " << bets.top() * RAISE_SIZES[action-2];
         return ss.str();
     }
     
-    if ((pflp_history > 0b1000000000) && // bet/raise but at limit; 1 or 7
-        (pflp_history < 0b1111111111111) &&
-        (!flop_seen))
+    if ((pfp_history > 0b1000000000) && // bet/raise but at limit; 1 or 7
+        (pfp_history < 0b1111111111111) &&
+        (!flp_seen))
         return (action == 1) ? "Fold" : "Call";
 
     /************************* Flop *************************/
     
-    if ((flop_history == 0) || (flop_history == 1)) {
+    if ((flp_history == 0) || (flp_history == 1)) {
         ss << BET_ACTION_NAMES[action-1];
         if ((action >= 2) && (action<=5)) ss << " " << pot_size * BET_SIZES[action-2];
         return ss.str();
     } 
     
-    if (((flop_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!turn_seen)) 
+    if (((flp_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!trn_seen)) 
         return (action == 1) ? "Fold" : "Call";
     
-    if ((flop_history < 0b1000000000) && // bet/raise; respond 1-7
-        (!turn_seen)) {
-        ss << RAISE_ACTION_NAMES[action-1] << " to ";
-        if ((action >= 2) && (action<=5)) ss << biggest_bet * RAISE_SIZES[action-2];
+    if ((flp_history < 0b1000000000) && // bet/raise; respond 1-7
+        (!trn_seen)) {
+        ss << RAISE_ACTION_NAMES[action-1];
+        if ((action >= 2) && (action<=5)) ss << " to " << bets.top() * RAISE_SIZES[action-2];
         return ss.str();
     } 
     
-    if ((flop_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (flop_history < 0b1111111111111) &&
-        (!turn_seen))
+    if ((flp_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (flp_history < 0b1111111111111) &&
+        (!trn_seen))
         return (action == 1) ? "Fold" : "Call";
 
     /************************* Turn *************************/
     
-    if ((turn_history == 0) || (turn_history == 1)) {
+    if ((trn_history == 0) || (trn_history == 1)) {
         ss << BET_ACTION_NAMES[action-1];
         if ((action >= 2) && (action<=5)) ss << " " << pot_size * BET_SIZES[action-2];
         return ss.str();
     }
     
-    if (((turn_history & 0b111) == 0b110) && // all-in; must fold or call
-         (!rivr_seen)) 
+    if (((trn_history & 0b111) == 0b110) && // all-in; must fold or call
+         (!rvr_seen)) 
         return (action == 1) ? "Fold" : "Call";
     
-    if ((turn_history < 0b1000000000) && // bet/raise; respond 1-7
-        (!rivr_seen)) {
-        ss << RAISE_ACTION_NAMES[action-1] << " to ";
-        if ((action >= 2) && (action<=5)) ss << biggest_bet * RAISE_SIZES[action-2];
+    if ((trn_history < 0b1000000000) && // bet/raise; respond 1-7
+        (!rvr_seen)) {
+        ss << RAISE_ACTION_NAMES[action-1];
+        if ((action >= 2) && (action<=5)) ss << " to " << bets.top() * RAISE_SIZES[action-2];
         return ss.str();
     }
     
-    if ((turn_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (turn_history < 0b1111111111111) &&
-        (!rivr_seen))
+    if ((trn_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (trn_history < 0b1111111111111) &&
+        (!rvr_seen))
         return (action == 1) ? "Fold" : "Call";
 
     /************************* River *************************/
 
-    if ((rivr_history == 0) || (rivr_history == 1)) {
+    if ((rvr_history == 0) || (rvr_history == 1)) {
         ss << BET_ACTION_NAMES[action-1];
         if ((action >= 2) && (action<=5)) ss << " " << pot_size * BET_SIZES[action-2];
         return ss.str();
     }  
     
-    if ((rivr_history & 0b111) == 0b110) // all-in; must fold or call 
+    if ((rvr_history & 0b111) == 0b110) // all-in; must fold or call 
         return (action == 1) ? "Fold" : "Call";
     
-    if (rivr_history < 0b1000000000) {
+    if (rvr_history < 0b1000000000) {
         ss << RAISE_ACTION_NAMES[action-1];
-        if ((action >= 2) && (action<=5)) ss << " to " << biggest_bet * RAISE_SIZES[action-2];
+        if ((action >= 2) && (action<=5)) ss << " to " << bets.top() * RAISE_SIZES[action-2];
         return ss.str();
     }
     
-    if ((rivr_history > 0b1000000000) && // bet/raise but at limit; call or fold
-        (rivr_history < 0b1111111111111))
+    if ((rvr_history > 0b1000000000) && // bet/raise but at limit; call or fold
+        (rvr_history < 0b1111111111111))
         return (action == 1) ? "Fold" : "Call";
 
     return "";
@@ -1234,7 +1082,7 @@ std::array<int, 2> pocket_id_to_row_col(int id) {
     return {8-(id/9), 8-(id%9)};
 }
 
-void GameState::print_range(int action) const {
+void GameState::print_range(int index) const {
 
     try {
         load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
@@ -1243,34 +1091,29 @@ void GameState::print_range(int action) const {
         return;
     }
 
-    std::string player_name = (player) ? "BB" : "SB"; 
+    int action = index_to_action(index);
+
+    std::string player_name = (player==0) ? "OOP" : "IP"; 
 
     std::cout << "\n******************* Board ********************\n" << to_string();
-    std::cout << "\n*************** " << player_name << " Range: " << action_to_string(action) << " ****************\n";
+    std::cout << "\n************** " << player_name << " Range: " << action_to_string(action) << " ***************\n";
 
     std::array<std::array<float, 9>, 9> range;
 
-    for (int p1=0; p1<36; p1++) {
-        for (int p2=p1+1; p2<36; p2++) {
+    for (int p1=1; p1<=NUM_CARDS; p1++) {
+        for (int p2=p1+1; p2<=NUM_CARDS; p2++) {
             GameState temp = *this;
-            
-            std::array<uint32_t, 4> suit_cards = {suita, suitb, suitc, suitd};
 
-            if ((suit_cards[p1/9] & (0b1 << ((p1%9)+18))) ||
-                (suit_cards[p2/9] & (0b1 << ((p2%9)+18)))) continue;
+            if ((temp.has_card(p1)) ||
+                (temp.has_card(p2))) continue;
 
-            if (temp.player==false) {
-                suit_cards[p1/9] |= (0b1 << (p1%9));
-                suit_cards[p2/9] |= (0b1 << (p2%9));
+            if (temp.player==0) {
+                temp.op1 = p1;
+                temp.op2 = p2;
             } else {
-                suit_cards[p1/9] |= (0b1 << ((p1%9)+9));
-                suit_cards[p2/9] |= (0b1 << ((p2%9)+9));
+                temp.ip1 = p1;
+                temp.ip2 = p2;
             }
-
-            temp.suita = suit_cards[0];
-            temp.suitb = suit_cards[1];
-            temp.suitc = suit_cards[2];
-            temp.suitd = suit_cards[3];
 
             InfoSet is = temp.to_information_set();
 
@@ -1299,12 +1142,80 @@ void GameState::print_range(int action) const {
     std::cout << "\n";
 }
 
+void GameState::print_range_turn(int index) const {
+
+    try {
+        load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return;
+    }
+
+    int action = index_to_action(index);
+
+    std::string player_name = (player==0) ? "OOP" : "IP"; 
+
+    std::cout << "\n******************* Board ********************\n" << to_string();
+    std::cout << "\n************** " << player_name << " Range: " << action_to_string(action) << " ***************\n";
+
+    std::array<std::array<float, 9>, 9> range;
+    std::array<std::array<float, 9>, 9> count;
+
+    for (int r=0; r<9; r++) {
+        for (int c=0; c<9; c++) {
+            range[r][c] = count[r][c] = 0.0f;
+        }
+    }
+
+    for (int p1=1; p1<=NUM_CARDS; p1++) {
+        for (int p2=p1+1; p2<=NUM_CARDS; p2++) {
+            GameState temp = *this;
+            // std::cout << temp.to_string() << "\n";
+            
+            if ((temp.has_card(p1)) ||
+                (temp.has_card(p2))) continue;
+
+            if (temp.player==0) {
+                temp.op1 = p1;
+                temp.op2 = p2;
+            } else {
+                temp.ip1 = p1;
+                temp.ip2 = p2;
+            }
+
+            InfoSet is = temp.to_information_set();
+
+            // std::cout << strategy_sum[is.hash()] << "\n";
+
+            std::array<int, 2> row_col = pocket_id_to_row_col(temp.p_id(player));
+            
+            range[row_col[0]][row_col[1]] += get_average_strategy(is)[action_to_index(action)];
+            count[row_col[0]][row_col[1]] += 1.0f;
+        }
+    }
+
+    for (int r=0; r<10; r++) {
+        for (int c=0; c<10; c++) {
+            if (c==0 && r==0) {
+                std::cout << "    ";
+            } else if (r==0 && c>0) {
+                std::cout << CARD_NAMES[9-c] << "s   ";
+            } else if (c==0 && r>0) {
+                std::cout << CARD_NAMES[9-r] << " ";
+            } else {
+                std::cout << FIXED_FLOAT(range[r-1][c-1]/count[r-1][c-1]) << " ";
+            }
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+}
+
 int ith_action(uint32_t history, int i) {
     return ((history & OCTAL_MASKS[i]) >> (3*i));
 }
 
 GameState generate_random_initial_state() {
-    std::array<uint32_t, 4> suit_cards = {0, 0, 0, 0};
 
     // Generate unique card indices
     std::array<int, 4> card_indices;
@@ -1314,39 +1225,20 @@ GameState generate_random_initial_state() {
         } while (std::find(card_indices.begin(), card_indices.begin() + i, card_indices[i]) != card_indices.begin() + i);
     }
 
-    // Assign cards to players
-    for (int i=0; i<2; ++i) {
-        int suit = card_indices[i] / 9;
-        int rank = card_indices[i] % 9;
-        suit_cards[suit] |= (1U << rank);
-    }
-
-    for (int i=2; i<4; ++i) {
-        int suit = card_indices[i] / 9;
-        int rank = card_indices[i] % 9;
-        suit_cards[suit] |= (1U << (rank + 9));
-    }
-
-    GameState gs;
-    gs.suita = suit_cards[0];
-    gs.suitb = suit_cards[1];
-    gs.suitc = suit_cards[2];
-    gs.suitd = suit_cards[3];
-
-    return gs;
-}
-
-GameState random_state_from_range(std::array<std::array<float, 36>, 36> range, std::array<int, 5> board_cards, float biggest_bet, float biggest_mutual_bet, float pot) {
-
     GameState gs;
 
-    return gs;
+    gs.op1 = card_indices[0];
+    gs.op2 = card_indices[1];
+    gs.ip1 = card_indices[2];
+    gs.ip2 = card_indices[3];
+    gs.bets.push(1.0f);
+    gs.bets.push(2.0f);
 
+    return gs;
 }
 
 void play_computer() {
-
-    bool p = 0; // start as small blind
+    bool p = 0; // start as oop
     float cumulative_winnings = 0.0f;
     bool keep_playing = true;
 
@@ -1355,34 +1247,30 @@ void play_computer() {
     while (keep_playing == true) {
         GameState gs = generate_random_initial_state();
 
-        while (!gs.is_terminal()) {
+        while (!gs.is_terminal) {
             while (gs.is_chance()){
-                gs.apply_chance_action(gs.num_chance_actions());
+                // get random card out of cards remaining
+                uint8_t c = get_card_distribution()(get_random_generator());
+                while (gs.has_card(c)) 
+                    c = get_card_distribution()(get_random_generator());
+                gs.deal_card(c);
             }
 
-            if (gs.is_terminal()) {
+            if (gs.is_terminal) {
                 break;
             }
 
             InfoSet is = gs.to_information_set();
             std::array<float, 7> average_strategy = get_average_strategy(is);
-        
-            std::array<uint32_t, 4> suits_backup = {gs.suita, gs.suitb, gs.suitc, gs.suitd};
-            uint32_t mask = (p == 0) ? 0b111111111000000000111111111
-                                     : 0b111111111111111111000000000;
 
-            gs.suita &= mask;
-            gs.suitb &= mask;
-            gs.suitc &= mask;
-            gs.suitd &= mask;
+            // Mask out opponent's cards when displaying to user
+            GameState temp = gs;
+
+            if (p==0) temp.ip1 = 0, temp.ip2 = 0;
+            if (p==1) temp.op1 = 0, temp.op2 = 0;
 
             std::cout << "**********************************************\n";
-            std::cout << gs.to_string() << "\n";
-
-            gs.suita = suits_backup[0];
-            gs.suitb = suits_backup[1];
-            gs.suitc = suits_backup[2];
-            gs.suitd = suits_backup[3];
+            std::cout << temp.to_string() << "\n";
 
             if (gs.player==p) {
                 // Player's turn
@@ -1424,4 +1312,154 @@ void play_computer() {
         if (in=='n') keep_playing = false;
         p = !p; // alternate player
     }
+}
+
+void generate_rank_table(GameState state) {
+    if (state.trn==0) {
+        for (int c1=1; c1<=NUM_CARDS; c1++) {
+            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+                for (int c3=c2+1; c3<=NUM_CARDS; c3++) {
+                    for (int c4=c3+1; c4<=NUM_CARDS; c4++) {
+                        state.op1 = 0; state.op2 = 0; state.trn = 0; state.rvr = 0;
+                        if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3) || state.has_card(c4)) continue;
+
+                        state.op1 = c1;
+                        state.op2 = c2;
+                        state.trn = c3;
+                        state.rvr = c4;
+                        int hand_rank = state.best_hand(0);
+
+                        rank_table[c1 - 1][c2 - 1][c3 - 1][c4 - 1] = hand_rank;
+                        rank_table[c1 - 1][c2 - 1][c4 - 1][c3 - 1] = hand_rank;
+                        rank_table[c1 - 1][c3 - 1][c2 - 1][c4 - 1] = hand_rank;
+                        rank_table[c1 - 1][c3 - 1][c4 - 1][c2 - 1] = hand_rank;
+                        rank_table[c1 - 1][c4 - 1][c2 - 1][c3 - 1] = hand_rank;
+                        rank_table[c1 - 1][c4 - 1][c3 - 1][c2 - 1] = hand_rank;
+
+                        rank_table[c2 - 1][c1 - 1][c3 - 1][c4 - 1] = hand_rank;
+                        rank_table[c2 - 1][c1 - 1][c4 - 1][c3 - 1] = hand_rank;
+                        rank_table[c2 - 1][c3 - 1][c1 - 1][c4 - 1] = hand_rank;
+                        rank_table[c2 - 1][c3 - 1][c4 - 1][c1 - 1] = hand_rank;
+                        rank_table[c2 - 1][c4 - 1][c1 - 1][c3 - 1] = hand_rank;
+                        rank_table[c2 - 1][c4 - 1][c3 - 1][c1 - 1] = hand_rank;
+
+                        rank_table[c3 - 1][c1 - 1][c2 - 1][c4 - 1] = hand_rank;
+                        rank_table[c3 - 1][c1 - 1][c4 - 1][c2 - 1] = hand_rank;
+                        rank_table[c3 - 1][c2 - 1][c1 - 1][c4 - 1] = hand_rank;
+                        rank_table[c3 - 1][c2 - 1][c4 - 1][c1 - 1] = hand_rank;
+                        rank_table[c3 - 1][c4 - 1][c1 - 1][c2 - 1] = hand_rank;
+                        rank_table[c3 - 1][c4 - 1][c2 - 1][c1 - 1] = hand_rank;
+
+                        rank_table[c4 - 1][c1 - 1][c2 - 1][c3 - 1] = hand_rank;
+                        rank_table[c4 - 1][c1 - 1][c3 - 1][c2 - 1] = hand_rank;
+                        rank_table[c4 - 1][c2 - 1][c1 - 1][c3 - 1] = hand_rank;
+                        rank_table[c4 - 1][c2 - 1][c3 - 1][c1 - 1] = hand_rank;
+                        rank_table[c4 - 1][c3 - 1][c1 - 1][c2 - 1] = hand_rank;
+                        rank_table[c4 - 1][c3 - 1][c2 - 1][c1 - 1] = hand_rank;
+                    }
+                }
+            }
+        }
+    } else if (state.rvr==0) {
+        for (int c1=1; c1<=NUM_CARDS; c1++) {
+            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+                for (int c3=c2+1; c3<=NUM_CARDS; c3++) {
+                    state.op1 = 0; state.op2 = 0; state.rvr = 0;
+                    if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3)) continue;
+
+                    state.op1 = c1;
+                    state.op2 = c2;
+                    state.rvr = c3;
+                    int hand_rank = state.best_hand(0);
+
+                    rank_table[c1 - 1][c2 - 1][state.trn - 1][c3 - 1] = hand_rank;
+                    rank_table[c1 - 1][c3 - 1][state.trn - 1][c2 - 1] = hand_rank;
+                    rank_table[c2 - 1][c1 - 1][state.trn - 1][c3 - 1] = hand_rank;
+                    rank_table[c2 - 1][c3 - 1][state.trn - 1][c1 - 1] = hand_rank;
+                    rank_table[c3 - 1][c1 - 1][state.trn - 1][c2 - 1] = hand_rank;
+                    rank_table[c3 - 1][c2 - 1][state.trn - 1][c1 - 1] = hand_rank;
+                }
+            }
+        }
+    } else {
+        for (int c1=1; c1<=NUM_CARDS; c1++) {
+            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+                state.op1 = 0; state.op2 = 0;
+                if (state.has_card(c1) || state.has_card(c2)) continue;
+                
+                state.op1 = c1;
+                state.op2 = c2;
+                int hand_rank = state.best_hand(0);
+
+                rank_table[c1 - 1][c2 - 1][state.trn - 1][state.rvr - 1] = hand_rank;
+                rank_table[c2 - 1][c1 - 1][state.trn - 1][state.rvr - 1] = hand_rank;
+            }
+        }
+    }
+}
+
+void test_rank_table(GameState state) {
+
+    int samples = 50000;
+    double total_time = 0.0f;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    generate_rank_table(state);
+
+    for (int i=0; i<samples; i++) {
+        for (int c1=1; c1<=NUM_CARDS; c1++) {
+            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+                for (int c3=c2+1; c3<=NUM_CARDS; c3++) { 
+                    state.op1 = 0; state.op2 = 0; state.rvr = 0;
+                    if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3)) continue;                    
+                    state.op1 = c1;
+                    state.op2 = c2;
+                    state.rvr = c3;
+                    state.flp_seen = true;
+                    state.trn_seen = true;
+                    state.rvr_seen = true;
+                    state.pfp_history = 0b111001;
+                    state.flp_history = 0b1001;
+                    state.best_hand_fast();
+                }
+            }
+        }
+    }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    total_time += elapsed.count();
+
+    std::cout << samples << " samples of best_hand_fast: "
+          << total_time << " seconds. " << 4960 * samples/total_time << " hands/second." << "\n";
+
+    total_time = 0.0f;
+    start = std::chrono::high_resolution_clock::now();
+
+    for (int i=0; i<samples; i++) {
+        for (int c1=1; c1<=NUM_CARDS; c1++) {
+            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+                for (int c3=c2+1; c3<=NUM_CARDS; c3++) { 
+                    state.op1 = 0; state.op2 = 0; state.rvr = 0;
+                    if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3)) continue;                    
+                    state.op1 = c1;
+                    state.op2 = c2;
+                    state.rvr = c3;
+                    state.flp_seen = true;
+                    state.trn_seen = true;
+                    state.rvr_seen = true;
+                    state.pfp_history = 0b111001;
+                    state.flp_history = 0b1001;
+                    state.best_hand(0);
+                }
+            }
+        }
+    }
+
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    total_time += elapsed.count();
+
+    std::cout << samples << " samples of best_hand: "
+          << total_time << " seconds. " << 4960 * samples/total_time << " hands/second." << "\n";
 }
