@@ -18,6 +18,8 @@
 #include "info_set.h"
 
 extern int rank_table[NUM_CARDS][NUM_CARDS][NUM_CARDS][NUM_CARDS];
+extern std::vector<std::vector<std::unordered_map<int, std::vector<std::tuple<int, int>>>>> strength_map_table;
+extern std::vector<std::vector<std::vector<int>>> sorted_strengths_table;
 
 class GameState {
 
@@ -73,8 +75,6 @@ public:
 	InfoSet to_information_set() const;
 	float rivr_hand_strength();
 	int p_id(bool p) const;
-	void print_range(int index) const;
-	void print_range_turn(int index) const;
 	
 	bool player;
 	uint8_t op1;
@@ -109,5 +109,9 @@ inline int rank(uint8_t card) {
     return (card-1)%9;
 }
 
+GameState initial_state(
+    float pot_size,
+    const std::array<uint8_t, 5>& board_cards);
+void generate_terminal_node_evaluation_tables(GameState state);
 void generate_rank_table(GameState state);
 void test_rank_table(GameState state);

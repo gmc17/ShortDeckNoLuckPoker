@@ -52,9 +52,9 @@ static const float EPSILON = 0.05f;
 static const float TAU = 1000;
 static const float BETA = 1000000;
 
-static const float DCFR_ALPHA = 1.5f;
-static const float DCFR_BETA = 0.0f;
-static const float DCFR_GAMMA = 2.0f;
+static const float DCFR_ALPHA = 1.0f;
+static const float DCFR_BETA = 1.0f;
+static const float DCFR_GAMMA = 1.0f;
 
 static const uint8_t FLOP_BUCKETS = 100;
 static const uint8_t TURN_BUCKETS = 100;

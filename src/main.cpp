@@ -4,9 +4,8 @@
 #include "constants.h"
 #include "info_set.h"
 #include "best_response.h"
-#include "cfr.h"
 #include "tree.h"
-#include "tree_cfr.h"
+#include "cfr.h"
 
 int main(int argc, char* argv[]) {
     // if (argc > 1) {
@@ -189,70 +188,34 @@ int main(int argc, char* argv[]) {
 	//     std::cout << gs.to_string() << "\n";
 	// }
 
-	std::array<uint8_t, 5> board_cards = {1, 16, 21, 25, 0};	
-	float pot_size = 60.0f;
+	std::array<uint8_t, 5> board_cards = {1, 16, 21, 0, 0};	
+	float pot_size = 80.0f;
     int iterations = 50;
 
-	GameState gs;
-	gs.fp1 = board_cards[0];
-	gs.fp2 = board_cards[1];
-	gs.fp3 = board_cards[2];
-	gs.trn = board_cards[3];
-	gs.pfp_history = 0b111001;
-	gs.flp_history = 0b1001;
-	gs.pot_size = pot_size;
-	gs.flp_seen = true;
-	gs.trn_seen = true;
-
-	Tree t = Tree(gs);
+	GameState state = initial_state(pot_size, board_cards);
 
 	std::array<std::array<float, NUM_CARDS>, NUM_CARDS> range;
 	for (int r=0; r<NUM_CARDS; r++) range[r].fill(0.0f);
 
 	for (int c1=1; c1<=NUM_CARDS; c1++) {
     	for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-			if (gs.has_card(c1) || gs.has_card(c2)) continue; 
-    		range[c1 - 1][c2 - 1] = 1.0f / (32.0f * 31.0f / 2.0f);
+			if (!(state.has_card(c1) || state.has_card(c2))) { 
+    			range[c1 - 1][c2 - 1] = 1.0f / (32.0f * 33.0f / 2.0f);
+    		}
     	}	
     }
 
-    // generate_rank_table(gs);
-
-    std::cout << "Number of action nodes: " << count_nodes(gs) << "\n";
-
-    // print_opponent_reach_probabilities(range);
-
-	//as_mccfr(iterations, range, range, board_cards, pot_size);
-	// generate_rank_table();
-	// test_rank_table(gs);
-	//cfr_plus_parallel(iterations, range, range, board_cards, pot_size);
-	Tree tree = tree_cfr_plus_parallel(iterations, range, range, board_cards, pot_size);
-	tree_calculate_exploitability_fast(tree, range, range, board_cards, pot_size);
-
-
+    std::cout << "Number of action nodes: " << count_nodes(state) << "\n";
+	Tree tree = cfr_plus(iterations, pot_size, board_cards, range, range);
     std::cout << "threads: " << std::thread::hardware_concurrency() << "\n";
+
+    std::vector<int> actions = {1};
+
+    print_range(tree, actions);
 
 	// play_computer();
 
 	// as_mccfr(1000);
-
-	for (int k=0; k<7; k++) {
-		GameState gs;
-
-		gs.fp1 = board_cards[0];
-	    gs.fp2 = board_cards[1];
-	    gs.fp3 = board_cards[2];
-	    gs.trn = board_cards[3];
-	   	gs.pfp_history = 0b111001;
-	    gs.flp_history = 0b1001;
-	    gs.pot_size = pot_size;
-	    gs.flp_seen = true;
-	    gs.trn_seen = true;
-
-	    gs.apply_index(gs.action_to_index(2)); // 0.5x pot
-
-	    // gs.print_range_turn(k);
-	}
 
 
 

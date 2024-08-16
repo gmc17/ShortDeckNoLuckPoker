@@ -4,6 +4,9 @@
 #include <variant>
 #include <memory>
 #include <cstdint>
+#include <immintrin.h>
+#include <cmath>
+#include <algorithm>
 
 #include "constants.h"
 #include "game_state.h"
@@ -12,20 +15,12 @@
 class Tree {
 public:
 	~Tree() = default;
-
-    // Copy constructor
     Tree(const Tree&) = delete; 
-
-    // Move constructor
     Tree(Tree&&) = default; 
-
-    // Copy assignment operator
     Tree& operator=(const Tree&) = delete; 
-
-    // Move assignment operator
     Tree& operator=(Tree&&) = default;
 
-    class Node; // Forward declaration
+    class Node;
 
     struct DecisionNode {
         std::array<std::array<std::vector<float>, NUM_CARDS>, NUM_CARDS> strategy_sum;
@@ -33,16 +28,18 @@ public:
         std::array<std::unique_ptr<Node>, MAX_ACTIONS> children;
         std::bitset<NUM_CARDS> card_marker;
         int actions;
+        bool player;
 
-        DecisionNode(int actions, const std::array<int, 5>& board_cards);
+        DecisionNode(bool player, int actions, const std::array<int, 5>& board_cards);
         std::array<float, MAX_ACTIONS> get_strategy(int c1, int c2) const;
+        std::array<float, MAX_ACTIONS> get_average_strategy(int c1, int c2) const;
         void update_strategy_sum(int c1, int c2, const std::array<float, MAX_ACTIONS>& strategy, float weight);
         void accumulate_regret(int action,
         					   const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_action_utilities,
         					   const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_utilities);
-        inline bool has_card(int card) {
-        	return card_marker[card - 1];
-        }
+        inline bool has_card(int card) const {
+    		return (card >= 1 && card <= NUM_CARDS) && card_marker[card - 1];
+    	}
     };
 
     struct ChanceNode {
@@ -51,14 +48,23 @@ public:
         int num;
 
         ChanceNode(int num, const std::array<int, 5>& board_cards);
+        inline bool has_card(int card) const {
+    		return (card >= 1 && card <= NUM_CARDS) && card_marker[card - 1];
+    	}
     };
 
     struct TerminalNode {
+    	std::bitset<NUM_CARDS> card_marker;
     	bool is_fold;
     	bool folding_player;
     	float pot;
-
-    	TerminalNode(bool is_f, bool folding_p, float pot_size);
+    	uint8_t trn;
+    	uint8_t rvr;
+    	
+    	TerminalNode(bool is_f, bool folding_p, float pot_size, const std::array<int, 5>& board_cards);
+    	inline bool has_card(int card) const {
+    		return (card >= 1 && card <= NUM_CARDS) && card_marker[card - 1];
+    	}
     };
 
     class Node : public std::variant<DecisionNode, ChanceNode, TerminalNode> {

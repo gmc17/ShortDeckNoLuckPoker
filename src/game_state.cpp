@@ -2,6 +2,8 @@
 #include "cfr.h"
 
 int rank_table[NUM_CARDS][NUM_CARDS][NUM_CARDS][NUM_CARDS];
+std::vector<std::vector<std::unordered_map<int, std::vector<std::tuple<int, int>>>>> strength_map_table;
+std::vector<std::vector<std::vector<int>>> sorted_strengths_table;
 
 GameState::GameState(): player(false),
                         op1(0), 
@@ -521,7 +523,7 @@ int GameState::num_actions() const {
 
     /************************* Turn *************************/
 
-    if ((trn_history == 0) || (trn_history == 1)) { // open action; can do anything 1-7; overlap all-ins
+    if ((trn_history == 0) || (trn_history == 1)) {
         int i=0;
         while ((i < 4) && (pot_size / 2.0f + pot_size * BET_SIZES[i]) < STACK_SIZE) i++;
         return 6-(4-i);
@@ -545,7 +547,7 @@ int GameState::num_actions() const {
 
     /************************* River *************************/
 
-    if ((rvr_history == 0) || (rvr_history == 1)) { // open action / check; can do anything 1-7; overlap all-ins
+    if ((rvr_history == 0) || (rvr_history == 1)) {
         int i=0;
         while ((i < 4) && (pot_size / 2.0f + pot_size * BET_SIZES[i]) < STACK_SIZE) i++;
         return 6-(4-i);
@@ -706,7 +708,7 @@ int GameState::action_to_index(int action) const {
 
 void GameState::apply_index(int index) {
 
-    uint8_t a = index_to_action(index);
+    int a = index_to_action(index);
 
     player = !player; // player alternates
 
@@ -869,15 +871,10 @@ void GameState::undo(bool prev_player, float prev_pot) {
 void GameState::deal_card(uint8_t card) {
     if (has_card(card)) throw std::runtime_error("Card already dealt");
 
-    // if (op1 == 0) op1 = card;
-    // else if (op2 == 0) op2 = card;
-    // else if (ip1 == 0) ip1 = card;
-    // else if (ip2 == 0) ip2 = card;
-
     if (fp1 == 0) fp1 = card;
     else if (fp2 == 0) fp2 = card;
-    else if (fp3 == 0) fp3 = card, flp_seen = true;
-    else if (trn == 0) trn = card, trn_seen = true;
+    else if (fp3 == 0) { fp3 = card; flp_seen = true; }
+    else if (trn == 0) { trn = card; trn_seen = true; }
     else if (rvr == 0) {
         rvr = card;
         rvr_seen = true;
@@ -1082,135 +1079,6 @@ std::array<int, 2> pocket_id_to_row_col(int id) {
     return {8-(id/9), 8-(id%9)};
 }
 
-void GameState::print_range(int index) const {
-
-    try {
-        load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return;
-    }
-
-    int action = index_to_action(index);
-
-    std::string player_name = (player==0) ? "OOP" : "IP"; 
-
-    std::cout << "\n******************* Board ********************\n" << to_string();
-    std::cout << "\n************** " << player_name << " Range: " << action_to_string(action) << " ***************\n";
-
-    std::array<std::array<float, 9>, 9> range;
-
-    for (int p1=1; p1<=NUM_CARDS; p1++) {
-        for (int p2=p1+1; p2<=NUM_CARDS; p2++) {
-            GameState temp = *this;
-
-            if ((temp.has_card(p1)) ||
-                (temp.has_card(p2))) continue;
-
-            if (temp.player==0) {
-                temp.op1 = p1;
-                temp.op2 = p2;
-            } else {
-                temp.ip1 = p1;
-                temp.ip2 = p2;
-            }
-
-            InfoSet is = temp.to_information_set();
-
-            // std::cout << strategy_sum[is.hash()] << "\n";
-
-            std::array<int, 2> row_col = pocket_id_to_row_col(temp.p_id(player));
-            
-            range[row_col[0]][row_col[1]] = get_average_strategy(is)[action_to_index(action)];
-        }
-    }
-
-    for (int r=0; r<10; r++) {
-        for (int c=0; c<10; c++) {
-            if (c==0 && r==0) {
-                std::cout << "    ";
-            } else if (r==0 && c>0) {
-                std::cout << CARD_NAMES[9-c] << "s   ";
-            } else if (c==0 && r>0) {
-                std::cout << CARD_NAMES[9-r] << " ";
-            } else {
-                std::cout << FIXED_FLOAT(range[r-1][c-1]) << " ";
-            }
-        }
-        std::cout << "\n";
-    }
-    std::cout << "\n";
-}
-
-void GameState::print_range_turn(int index) const {
-
-    try {
-        load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return;
-    }
-
-    int action = index_to_action(index);
-
-    std::string player_name = (player==0) ? "OOP" : "IP"; 
-
-    std::cout << "\n******************* Board ********************\n" << to_string();
-    std::cout << "\n************** " << player_name << " Range: " << action_to_string(action) << " ***************\n";
-
-    std::array<std::array<float, 9>, 9> range;
-    std::array<std::array<float, 9>, 9> count;
-
-    for (int r=0; r<9; r++) {
-        for (int c=0; c<9; c++) {
-            range[r][c] = count[r][c] = 0.0f;
-        }
-    }
-
-    for (int p1=1; p1<=NUM_CARDS; p1++) {
-        for (int p2=p1+1; p2<=NUM_CARDS; p2++) {
-            GameState temp = *this;
-            // std::cout << temp.to_string() << "\n";
-            
-            if ((temp.has_card(p1)) ||
-                (temp.has_card(p2))) continue;
-
-            if (temp.player==0) {
-                temp.op1 = p1;
-                temp.op2 = p2;
-            } else {
-                temp.ip1 = p1;
-                temp.ip2 = p2;
-            }
-
-            InfoSet is = temp.to_information_set();
-
-            // std::cout << strategy_sum[is.hash()] << "\n";
-
-            std::array<int, 2> row_col = pocket_id_to_row_col(temp.p_id(player));
-            
-            range[row_col[0]][row_col[1]] += get_average_strategy(is)[action_to_index(action)];
-            count[row_col[0]][row_col[1]] += 1.0f;
-        }
-    }
-
-    for (int r=0; r<10; r++) {
-        for (int c=0; c<10; c++) {
-            if (c==0 && r==0) {
-                std::cout << "    ";
-            } else if (r==0 && c>0) {
-                std::cout << CARD_NAMES[9-c] << "s   ";
-            } else if (c==0 && r>0) {
-                std::cout << CARD_NAMES[9-r] << " ";
-            } else {
-                std::cout << FIXED_FLOAT(range[r-1][c-1]/count[r-1][c-1]) << " ";
-            }
-        }
-        std::cout << "\n";
-    }
-    std::cout << "\n";
-}
-
 int ith_action(uint32_t history, int i) {
     return ((history & OCTAL_MASKS[i]) >> (3*i));
 }
@@ -1237,229 +1105,108 @@ GameState generate_random_initial_state() {
     return gs;
 }
 
-void play_computer() {
-    bool p = 0; // start as oop
-    float cumulative_winnings = 0.0f;
-    bool keep_playing = true;
+GameState initial_state(
+    float pot_size,
+    const std::array<uint8_t, 5>& board_cards) {
 
-    load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
+    GameState state;
+    state.pfp_history = 0b111001;
+    state.pot_size = pot_size;
+    state.flp_seen = true;
+    // state.bets.push(0.0f);
 
-    while (keep_playing == true) {
-        GameState gs = generate_random_initial_state();
+    state.fp1 = board_cards[0];
+    state.fp2 = board_cards[1];
+    state.fp3 = board_cards[2];
+    state.trn = board_cards[3]; 
+    state.rvr = board_cards[4]; 
 
-        while (!gs.is_terminal) {
-            while (gs.is_chance()){
-                // get random card out of cards remaining
-                uint8_t c = get_card_distribution()(get_random_generator());
-                while (gs.has_card(c)) 
-                    c = get_card_distribution()(get_random_generator());
-                gs.deal_card(c);
-            }
+    if (state.trn > 0) {
+        state.trn_seen = true;
+        state.flp_history = 0b1001;
+    }
 
-            if (gs.is_terminal) {
-                break;
-            }
+    if (state.rvr > 0) {
+        state.rvr_seen = true;
+        state.trn_history = 0b1001;
+    }
 
-            InfoSet is = gs.to_information_set();
-            std::array<float, 7> average_strategy = get_average_strategy(is);
+    return state;
+}
 
-            // Mask out opponent's cards when displaying to user
-            GameState temp = gs;
+// void play_computer() {
+//     bool p = 0; // start as oop
+//     float cumulative_winnings = 0.0f;
+//     bool keep_playing = true;
 
-            if (p==0) temp.ip1 = 0, temp.ip2 = 0;
-            if (p==1) temp.op1 = 0, temp.op2 = 0;
+//     load_cfr_data("latest_checkpoint.dat", regret_sum, strategy_sum);
 
-            std::cout << "**********************************************\n";
-            std::cout << temp.to_string() << "\n";
+//     while (keep_playing == true) {
+//         GameState gs = generate_random_initial_state();
 
-            if (gs.player==p) {
-                // Player's turn
-                std::cout << "Player turn. Input action: ";
+//         while (!gs.is_terminal) {
+//             while (gs.is_chance()){
+//                 // get random card out of cards remaining
+//                 uint8_t c = get_card_distribution()(get_random_generator());
+//                 while (gs.has_card(c)) 
+//                     c = get_card_distribution()(get_random_generator());
+//                 gs.deal_card(c);
+//             }
 
-                int action;
-                std::cin >> action;
+//             if (gs.is_terminal) {
+//                 break;
+//             }
 
-                std::cout << "GTO strategy:\n";
+//             InfoSet is = gs.to_information_set();
+//             std::array<float, 7> average_strategy = get_average_strategy(is);
 
-                for (int i=0; i<gs.num_actions(); i++) {
-                    std::cout << gs.action_to_string(gs.index_to_action(i)) << ": " << FIXED_FLOAT(average_strategy[i])*100 << "%";
-                    if (i!=gs.num_actions()-1) std::cout << ", ";
-                }
+//             // Mask out opponent's cards when displaying to user
+//             GameState temp = gs;
 
-                std::cout << "\n**********************************************\n\n";
+//             if (p==0) temp.ip1 = 0, temp.ip2 = 0;
+//             if (p==1) temp.op1 = 0, temp.op2 = 0;
 
-                // std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
+//             std::cout << "**********************************************\n";
+//             std::cout << temp.to_string() << "\n";
 
-                gs.apply_index(gs.action_to_index(action));
-            } else {
-                // Computer's turn
-                int sampled_index = sample_action(average_strategy);
+//             if (gs.player==p) {
+//                 // Player's turn
+//                 std::cout << "Player turn. Input action: ";
 
-                std::cout << "Computer turn. " << gs.action_to_string(gs.index_to_action(sampled_index)) << "\n**********************************************\n\n";
-                // std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
+//                 int action;
+//                 std::cin >> action;
+
+//                 std::cout << "GTO strategy:\n";
+
+//                 for (int i=0; i<gs.num_actions(); i++) {
+//                     std::cout << gs.action_to_string(gs.index_to_action(i)) << ": " << FIXED_FLOAT(average_strategy[i])*100 << "%";
+//                     if (i!=gs.num_actions()-1) std::cout << ", ";
+//                 }
+
+//                 std::cout << "\n**********************************************\n\n";
+
+//                 // std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
+
+//                 gs.apply_index(gs.action_to_index(action));
+//             } else {
+//                 // Computer's turn
+//                 int sampled_index = sample_action(average_strategy);
+
+//                 std::cout << "Computer turn. " << gs.action_to_string(gs.index_to_action(sampled_index)) << "\n**********************************************\n\n";
+//                 // std::cout << "GTO strategy: " << average_strategy << "\n**********************************************\n\n";
                 
-                gs.apply_index(sampled_index);
-            }
-        }
-        std::cout << "Terminal game state:\n" << gs.to_string() << "\n";
-        cumulative_winnings += gs.utility(p);
-        std::cout << "HAND WINNINGS: " << gs.utility(p) << "\n";
-        std::cout << "CUMULATIVE WINNINGS: " << cumulative_winnings << "\n**********************************************\n";
-        std::cout << "Continue playing? (Y/n): "; 
+//                 gs.apply_index(sampled_index);
+//             }
+//         }
+//         std::cout << "Terminal game state:\n" << gs.to_string() << "\n";
+//         cumulative_winnings += gs.utility(p);
+//         std::cout << "HAND WINNINGS: " << gs.utility(p) << "\n";
+//         std::cout << "CUMULATIVE WINNINGS: " << cumulative_winnings << "\n**********************************************\n";
+//         std::cout << "Continue playing? (Y/n): "; 
 
-        char in;
-        std::cin >> in;
-        if (in=='n') keep_playing = false;
-        p = !p; // alternate player
-    }
-}
-
-void generate_rank_table(GameState state) {
-    if (state.trn==0) {
-        for (int c1=1; c1<=NUM_CARDS; c1++) {
-            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-                for (int c3=c2+1; c3<=NUM_CARDS; c3++) {
-                    for (int c4=c3+1; c4<=NUM_CARDS; c4++) {
-                        state.op1 = 0; state.op2 = 0; state.trn = 0; state.rvr = 0;
-                        if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3) || state.has_card(c4)) continue;
-
-                        state.op1 = c1;
-                        state.op2 = c2;
-                        state.trn = c3;
-                        state.rvr = c4;
-                        int hand_rank = state.best_hand(0);
-
-                        rank_table[c1 - 1][c2 - 1][c3 - 1][c4 - 1] = hand_rank;
-                        rank_table[c1 - 1][c2 - 1][c4 - 1][c3 - 1] = hand_rank;
-                        rank_table[c1 - 1][c3 - 1][c2 - 1][c4 - 1] = hand_rank;
-                        rank_table[c1 - 1][c3 - 1][c4 - 1][c2 - 1] = hand_rank;
-                        rank_table[c1 - 1][c4 - 1][c2 - 1][c3 - 1] = hand_rank;
-                        rank_table[c1 - 1][c4 - 1][c3 - 1][c2 - 1] = hand_rank;
-
-                        rank_table[c2 - 1][c1 - 1][c3 - 1][c4 - 1] = hand_rank;
-                        rank_table[c2 - 1][c1 - 1][c4 - 1][c3 - 1] = hand_rank;
-                        rank_table[c2 - 1][c3 - 1][c1 - 1][c4 - 1] = hand_rank;
-                        rank_table[c2 - 1][c3 - 1][c4 - 1][c1 - 1] = hand_rank;
-                        rank_table[c2 - 1][c4 - 1][c1 - 1][c3 - 1] = hand_rank;
-                        rank_table[c2 - 1][c4 - 1][c3 - 1][c1 - 1] = hand_rank;
-
-                        rank_table[c3 - 1][c1 - 1][c2 - 1][c4 - 1] = hand_rank;
-                        rank_table[c3 - 1][c1 - 1][c4 - 1][c2 - 1] = hand_rank;
-                        rank_table[c3 - 1][c2 - 1][c1 - 1][c4 - 1] = hand_rank;
-                        rank_table[c3 - 1][c2 - 1][c4 - 1][c1 - 1] = hand_rank;
-                        rank_table[c3 - 1][c4 - 1][c1 - 1][c2 - 1] = hand_rank;
-                        rank_table[c3 - 1][c4 - 1][c2 - 1][c1 - 1] = hand_rank;
-
-                        rank_table[c4 - 1][c1 - 1][c2 - 1][c3 - 1] = hand_rank;
-                        rank_table[c4 - 1][c1 - 1][c3 - 1][c2 - 1] = hand_rank;
-                        rank_table[c4 - 1][c2 - 1][c1 - 1][c3 - 1] = hand_rank;
-                        rank_table[c4 - 1][c2 - 1][c3 - 1][c1 - 1] = hand_rank;
-                        rank_table[c4 - 1][c3 - 1][c1 - 1][c2 - 1] = hand_rank;
-                        rank_table[c4 - 1][c3 - 1][c2 - 1][c1 - 1] = hand_rank;
-                    }
-                }
-            }
-        }
-    } else if (state.rvr==0) {
-        for (int c1=1; c1<=NUM_CARDS; c1++) {
-            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-                for (int c3=c2+1; c3<=NUM_CARDS; c3++) {
-                    state.op1 = 0; state.op2 = 0; state.rvr = 0;
-                    if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3)) continue;
-
-                    state.op1 = c1;
-                    state.op2 = c2;
-                    state.rvr = c3;
-                    int hand_rank = state.best_hand(0);
-
-                    rank_table[c1 - 1][c2 - 1][state.trn - 1][c3 - 1] = hand_rank;
-                    rank_table[c1 - 1][c3 - 1][state.trn - 1][c2 - 1] = hand_rank;
-                    rank_table[c2 - 1][c1 - 1][state.trn - 1][c3 - 1] = hand_rank;
-                    rank_table[c2 - 1][c3 - 1][state.trn - 1][c1 - 1] = hand_rank;
-                    rank_table[c3 - 1][c1 - 1][state.trn - 1][c2 - 1] = hand_rank;
-                    rank_table[c3 - 1][c2 - 1][state.trn - 1][c1 - 1] = hand_rank;
-                }
-            }
-        }
-    } else {
-        for (int c1=1; c1<=NUM_CARDS; c1++) {
-            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-                state.op1 = 0; state.op2 = 0;
-                if (state.has_card(c1) || state.has_card(c2)) continue;
-                
-                state.op1 = c1;
-                state.op2 = c2;
-                int hand_rank = state.best_hand(0);
-
-                rank_table[c1 - 1][c2 - 1][state.trn - 1][state.rvr - 1] = hand_rank;
-                rank_table[c2 - 1][c1 - 1][state.trn - 1][state.rvr - 1] = hand_rank;
-            }
-        }
-    }
-}
-
-void test_rank_table(GameState state) {
-
-    int samples = 50000;
-    double total_time = 0.0f;
-    auto start = std::chrono::high_resolution_clock::now();
-
-    generate_rank_table(state);
-
-    for (int i=0; i<samples; i++) {
-        for (int c1=1; c1<=NUM_CARDS; c1++) {
-            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-                for (int c3=c2+1; c3<=NUM_CARDS; c3++) { 
-                    state.op1 = 0; state.op2 = 0; state.rvr = 0;
-                    if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3)) continue;                    
-                    state.op1 = c1;
-                    state.op2 = c2;
-                    state.rvr = c3;
-                    state.flp_seen = true;
-                    state.trn_seen = true;
-                    state.rvr_seen = true;
-                    state.pfp_history = 0b111001;
-                    state.flp_history = 0b1001;
-                    state.best_hand_fast();
-                }
-            }
-        }
-    }
-    
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    total_time += elapsed.count();
-
-    std::cout << samples << " samples of best_hand_fast: "
-          << total_time << " seconds. " << 4960 * samples/total_time << " hands/second." << "\n";
-
-    total_time = 0.0f;
-    start = std::chrono::high_resolution_clock::now();
-
-    for (int i=0; i<samples; i++) {
-        for (int c1=1; c1<=NUM_CARDS; c1++) {
-            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-                for (int c3=c2+1; c3<=NUM_CARDS; c3++) { 
-                    state.op1 = 0; state.op2 = 0; state.rvr = 0;
-                    if (state.has_card(c1) || state.has_card(c2) || state.has_card(c3)) continue;                    
-                    state.op1 = c1;
-                    state.op2 = c2;
-                    state.rvr = c3;
-                    state.flp_seen = true;
-                    state.trn_seen = true;
-                    state.rvr_seen = true;
-                    state.pfp_history = 0b111001;
-                    state.flp_history = 0b1001;
-                    state.best_hand(0);
-                }
-            }
-        }
-    }
-
-    end = std::chrono::high_resolution_clock::now();
-    elapsed = end - start;
-    total_time += elapsed.count();
-
-    std::cout << samples << " samples of best_hand: "
-          << total_time << " seconds. " << 4960 * samples/total_time << " hands/second." << "\n";
-}
+//         char in;
+//         std::cin >> in;
+//         if (in=='n') keep_playing = false;
+//         p = !p; // alternate player
+//     }
+// }

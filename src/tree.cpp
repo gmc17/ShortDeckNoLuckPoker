@@ -1,11 +1,13 @@
 #include "tree.h"
 
-#include <cmath>
-#include <algorithm>
-
-Tree::DecisionNode::DecisionNode(int num_actions, const std::array<int, 5>& board_cards) {
-    actions = num_actions;
+Tree::DecisionNode::DecisionNode(
+    bool p, 
+    int num_actions, 
+    const std::array<int, 5>& board_cards) {
     
+    player = p;
+    actions = num_actions;
+
     for (auto& row : strategy_sum) {
         for (auto& cell : row) {
             cell.resize(actions, 0.0f);
@@ -23,7 +25,10 @@ Tree::DecisionNode::DecisionNode(int num_actions, const std::array<int, 5>& boar
     }
 }
 
-Tree::ChanceNode::ChanceNode(int num_in_deck, const std::array<int, 5>& board_cards) {
+Tree::ChanceNode::ChanceNode(
+    int num_in_deck, 
+    const std::array<int, 5>& board_cards) {
+    
     num = num_in_deck;
 
     for (int i=0; i<NUM_CARDS; i++) card_marker[i] = false;
@@ -32,33 +37,59 @@ Tree::ChanceNode::ChanceNode(int num_in_deck, const std::array<int, 5>& board_ca
     }
 }
 
-Tree::TerminalNode::TerminalNode(bool is_f, bool folding_p, float pot_size) {
+Tree::TerminalNode::TerminalNode(bool is_f, bool folding_p, float pot_size, const std::array<int, 5>& board_cards) {
     is_fold = is_f;
     folding_player = folding_p;
     pot = pot_size;
+    trn = board_cards[3];
+    rvr = board_cards[4];
+    for (int i=0; i<NUM_CARDS; i++) card_marker[i] = false;
+    for (const auto& card : board_cards) {
+        if (card >= 1 && card <= NUM_CARDS) card_marker[card - 1] = true;
+    }
 }
 
 std::array<float, MAX_ACTIONS> Tree::DecisionNode::get_strategy(int c1, int c2) const {
     std::array<float, MAX_ACTIONS> strategy;
     const auto& regrets = regret_sum[c1 - 1][c2 - 1];
     float normalizing_sum = 0.0f;
-    for (int a = 0; a < regrets.size(); ++a) {
+    for (int a = 0; a < actions; ++a) {
         strategy[a] = std::max(regrets[a], 0.0f);
         normalizing_sum += strategy[a];
     }
-    if (normalizing_sum > 1e-8) {
-        for (int a = 0; a < regrets.size(); ++a) {
+    if (normalizing_sum > 1e-7) {
+        for (int a = 0; a < actions; ++a) {
             strategy[a] /= normalizing_sum;
         }
     } else {
-        float uniform = 1.0f / regrets.size();
-        std::fill(strategy.begin(), strategy.begin() + regrets.size(), uniform);
+        float uniform = 1.0f / actions;
+        for (int a = 0; a < actions; ++a) {
+            strategy[a] = uniform;
+        }
     }
     return strategy;
 }
 
+std::array<float, MAX_ACTIONS> Tree::DecisionNode::get_average_strategy(int c1, int c2) const {
+    std::array<float, MAX_ACTIONS> avg_strategy;
+    const auto& strat_sum = strategy_sum[c1 - 1][c2 - 1];
+    float normalizing_sum = 0.0f;
+    for (int a = 0; a < actions; ++a) {
+        normalizing_sum += strat_sum[a];
+    }
+    if (normalizing_sum > 1e-2) {
+        for (int a = 0; a < actions; ++a) {
+            avg_strategy[a] = strat_sum[a] / normalizing_sum;
+        }
+    } else {
+        float uniform_prob = 1.0f / actions;
+        std::fill(avg_strategy.begin(), avg_strategy.begin() + actions, uniform_prob);
+    }
+    return avg_strategy;
+}
+
 void Tree::DecisionNode::update_strategy_sum(int c1, int c2, const std::array<float, MAX_ACTIONS>& strategy, float weight) {
-    for (int a = 0; a < strategy.size(); ++a) {
+    for (int a = 0; a < actions; ++a) {
         strategy_sum[c1 - 1][c2 - 1][a] += weight * strategy[a];
     }
 }
@@ -74,18 +105,16 @@ void Tree::DecisionNode::accumulate_regret(int action,
 }
 
 Tree::Tree(const GameState& root_state) : root(nullptr) {
+    std::array<int, 5> board_cards = {root_state.fp1, root_state.fp2, root_state.fp3, root_state.trn, root_state.rvr};
     if (root_state.is_terminal) {
-        root = std::make_unique<Node>(TerminalNode(root_state.is_fold(), root_state.player, root_state.pot_size));
+        root = std::make_unique<Node>(TerminalNode(root_state.is_fold(), root_state.player, root_state.pot_size, board_cards));
     } else if (root_state.is_chance()) {
         int num = root_state.num_in_deck();
-        std::array<int, 5> board_cards = {root_state.fp1, root_state.fp2, root_state.fp3, root_state.trn, root_state.rvr};
-        
         root = std::make_unique<Node>(ChanceNode(num, board_cards));
     } else {
+        bool player = root_state.player;
         int actions = root_state.num_actions();
-        std::array<int, 5> board_cards = {root_state.fp1, root_state.fp2, root_state.fp3, root_state.trn, root_state.rvr};
-        
-        root = std::make_unique<Node>(DecisionNode(actions, board_cards));
+        root = std::make_unique<Node>(DecisionNode(player, actions, board_cards));
     }
     build_tree(root.get(), root_state);
 }
@@ -121,53 +150,36 @@ Tree::Node* Tree::get_node(const std::vector<int>& history) const {
 }
 
 void Tree::build_tree(Node* node, const GameState& state) {
-    if (state.is_terminal) return; 
+
+    if (state.is_terminal) return;
+
+    auto create_child_node = [](const GameState& new_state) -> std::unique_ptr<Node> {
+        std::array<int, 5> board_cards = {new_state.fp1, new_state.fp2, new_state.fp3, new_state.trn, new_state.rvr};
+        if (new_state.is_terminal) {
+            return std::make_unique<Node>(TerminalNode(new_state.is_fold(), new_state.player, new_state.pot_size, board_cards));
+        } else if (new_state.is_chance()) {
+            return std::make_unique<Node>(ChanceNode(new_state.num_in_deck(), board_cards));
+        } else {
+            return std::make_unique<Node>(DecisionNode(new_state.player, new_state.num_actions(), board_cards));
+        }
+    };
 
     if (state.is_chance()) {
         auto& chance_node = std::get<ChanceNode>(*node);
-        for (int c = 1; c <= NUM_CARDS; c++) {
-            if (state.has_card(c)) continue;
-
-            GameState new_state = state;
-            new_state.deal_card(c);
-
-            if (new_state.is_terminal) {
-                chance_node.children[c - 1] = std::make_unique<Node>(TerminalNode(new_state.is_fold(), new_state.player, new_state.pot_size));
-            } else if (new_state.is_chance()) {
-                int num = new_state.num_in_deck();
-                std::array<int, 5> board_cards = {new_state.fp1, new_state.fp2, new_state.fp3, new_state.trn, new_state.rvr};
-                
-                chance_node.children[c - 1] = std::make_unique<Node>(ChanceNode(num, board_cards));
-            } else {
-                int actions = new_state.num_actions();
-                std::array<int, 5> board_cards = {new_state.fp1, new_state.fp2, new_state.fp3, new_state.trn, new_state.rvr};
-                
-                chance_node.children[c - 1] = std::make_unique<Node>(DecisionNode(actions, board_cards));
+        for (int c=1; c<=NUM_CARDS; c++) {
+            if (!state.has_card(c)) {
+                GameState new_state = state;
+                new_state.deal_card(c);
+                chance_node.children[c - 1] = create_child_node(new_state);
+                build_tree(chance_node.children[c - 1].get(), new_state);
             }
-            
-            build_tree(chance_node.children[c - 1].get(), new_state);
         }
     } else {
-        int actions = state.num_actions();
         auto& decision_node = std::get<DecisionNode>(*node);
-        for (int a = 0; a < actions; a++) {
+        for (int a=0; a<state.num_actions(); a++) {
             GameState new_state = state;
             new_state.apply_index(a);
-
-            if (new_state.is_terminal) {
-                decision_node.children[a] = std::make_unique<Node>(TerminalNode(new_state.is_fold(), new_state.player, new_state.pot_size));
-            } else if (new_state.is_chance()) {
-                int num = new_state.num_in_deck();
-                std::array<int, 5> board_cards = {new_state.fp1, new_state.fp2, new_state.fp3, new_state.trn, new_state.rvr};
-
-                decision_node.children[a] = std::make_unique<Node>(ChanceNode(num, board_cards));
-            } else {
-                int actions = new_state.num_actions();
-                std::array<int, 5> board_cards = {new_state.fp1, new_state.fp2, new_state.fp3, new_state.trn, new_state.rvr};
-                
-                decision_node.children[a] = std::make_unique<Node>(DecisionNode(actions, board_cards));
-            }
-
+            decision_node.children[a] = create_child_node(new_state);
             build_tree(decision_node.children[a].get(), new_state);
         }
     }
@@ -182,12 +194,12 @@ int count_nodes(GameState state) {
     // Chance
     if (state.is_chance()) {
         for (int c=1; c<=NUM_CARDS; c++) {
-            if (state.has_card(c)) continue;
+            if (!state.has_card(c)) {
+                GameState new_state = state;
+                new_state.deal_card(c);
 
-            GameState new_state = state;
-            new_state.deal_card(c);
-
-            res += count_nodes(new_state);
+                res += count_nodes(new_state);
+            }
         }
         return res;
     }
