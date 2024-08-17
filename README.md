@@ -7,7 +7,9 @@ This project aims to provide the first free, open-source tool for strategy analy
 ## Introduction
 Short Deck Poker, also known as Six Plus Hold'em, is a variant of Texas Hold'em played with a 36-card deck. The hand rankings are unchanged, except that in this version, a flush ranks higher than a full house. This project utilizes the CFR+ algorithm, a variation of Counterfactual Regret Minimization, to efficiently compute near-optimal strategies for this game. Our implementation currently offers a text-based user interface for generating ranges in any spot.
 
-## Example Use
+## Text Interface (IN PROGRESS)
+
+![Text Interface Example](images/text_interface_example.png)
 
 ## Installation and Use
 #### Clone the repository: 
