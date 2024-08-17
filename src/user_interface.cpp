@@ -153,7 +153,7 @@ std::string bytes_to_readable_string(
 bool prompt_tree_building(const GameState& initial_state) {
     unsigned long long estimated_memory = estimate_tree_memory(initial_state);
     std::cout << "Estimated memory usage is " << bytes_to_readable_string(estimated_memory) 
-              << ". Would you like to continue to build the tree? (Y/n)\n";
+              << ". Would you like to continue to build the tree? (Y/n) ";
 
     // Clear any leftover characters in the input buffer
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
