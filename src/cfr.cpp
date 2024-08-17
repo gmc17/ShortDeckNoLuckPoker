@@ -1,60 +1,44 @@
 #include "cfr.h"
 
-Tree cfr_plus(
-    int iterations, 
-    float pot_size,
-    const std::array<uint8_t, 5>& board_cards,
+void cfr_plus(
+    Tree& tree,
+    CFRParameters parameters,
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& op_range, 
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& ip_range) {
-
+    
     double total_time = 0.0f;
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Building tree... " << std::flush;
-
-    GameState state = initial_state(pot_size, board_cards);
-    generate_rank_table(state);
-    generate_terminal_node_evaluation_tables(state);
-    Tree tree = Tree(state);
-
+    const auto ones = create_ones_array();
     int num_threads = get_cpu_cores();
     ThreadPool pool(num_threads);
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    total_time += elapsed.count();
+    int t = 1;
+    float current_exploitability = 10;
+    while (t <= parameters.max_iterations && 
+           parameters.exploitability_goal < current_exploitability) {
 
-    std::cout << "finished. " << total_time << " seconds.\n";
-    
-    total_time = 0.0f;
-    start = std::chrono::high_resolution_clock::now();
-
-    const auto ones = create_ones_array();
-
-    for (int t=1; t<=iterations; t++) {
-        float delay = iterations / 2;
+        float delay = 0.0f;
         float weight = std::max(t - delay, 0.0f);
         
         cfr_plus_traverse_tree(tree.get_root(), 0, 0, weight, ones, ip_range, op_range, pool);
         cfr_plus_traverse_tree(tree.get_root(), 1, 0, weight, ones, op_range, ip_range, pool);
 
-        if (t%5==0) {
+        if (t % parameters.log_interval==0) {
             std::cout << "Iteration " << t << " complete.\n";
-            calculate_exploitability(tree, pot_size, board_cards, op_range, ip_range);
+            current_exploitability = calculate_exploitability(tree, op_range, ip_range);
             std::cout << "\n";
         }
+
+        t++;
     }
 
-    end = std::chrono::high_resolution_clock::now();
-    elapsed = end - start;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
     total_time += elapsed.count();
 
-    std::cout << iterations << " iterations of CFR+: "
-              << total_time << " seconds. " << iterations/total_time << " iterations/second." << "\n";
-
-    calculate_exploitability(tree, pot_size, board_cards, op_range, ip_range);
-
-    return tree;
+    std::cout << t << " iterations of CFR+: "
+              << total_time << " seconds. " << t/total_time << " iterations/second." << "\n";
 }
 
 std::unique_ptr<std::array<std::array<float, NUM_CARDS>, NUM_CARDS>> cfr_plus_traverse_tree( 

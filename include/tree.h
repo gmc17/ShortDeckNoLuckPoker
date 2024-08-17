@@ -117,4 +117,4 @@ private:
     void build_tree(Node* node, const GameState& state);
 };
 
-int count_nodes(GameState state);
+float estimate_tree_memory(GameState state);

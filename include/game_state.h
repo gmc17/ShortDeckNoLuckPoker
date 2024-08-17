@@ -100,7 +100,6 @@ public:
 
 void play_computer();
 int ith_action(uint32_t history, int i);
-GameState generate_random_initial_state();
 std::array<int, 2> pocket_id_to_row_col(int id);
 inline int suit(uint8_t card) {
 	return (card-1)/9;
@@ -108,10 +107,6 @@ inline int suit(uint8_t card) {
 inline int rank(uint8_t card) {
     return (card-1)%9;
 }
-
-GameState initial_state(
-    float pot_size,
-    const std::array<uint8_t, 5>& board_cards);
 void generate_terminal_node_evaluation_tables(GameState state);
 void generate_rank_table(GameState state);
 void test_rank_table(GameState state);

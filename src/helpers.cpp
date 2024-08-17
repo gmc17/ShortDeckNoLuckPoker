@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "constants.h"
 
 // void add_2d_arrays_simd(
 //     std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& res,
@@ -408,13 +409,13 @@ void print_reach_probabilities(const std::array<std::array<float, NUM_CARDS>, NU
     // }
 }
 
-
-
 void print_range(
     const Tree& tree,
+    GameState initial_state,
     const std::vector<int>& actions) {
 
     Tree::Node* node = tree.get_node(actions);
+    GameState state = get_state(initial_state, actions);
 
     if (!node->is_decision_node()) {
         std::cout << "Error: Non-decision node passed to print_range function.\n";
@@ -430,6 +431,7 @@ void print_range(
             std::cout << CARD_NAMES[rank(c)] << SUIT_NAMES[suit(c)];
         }
     }
+    std::cout << "\nPot: " << state.pot_size;
 
     std::string player_name = (decision_node.player==0) ? "OOP" : "IP";
     std::cout << "\n\n***************** " << player_name << " Range: ******************\n";
@@ -457,7 +459,7 @@ void print_range(
             }
         }
 
-        std::cout << "Action: " << a << "\n";
+        std::cout << "Action: " << state.action_to_string(state.index_to_action(a)) << "\n";
 
         for (int r=0; r<10; r++) {
             for (int c=0; c<10; c++) {
@@ -475,4 +477,79 @@ void print_range(
         }
         std::cout << "\n";
     }  
+}
+
+GameState generate_random_initial_state() {
+
+    std::array<int, 4> card_indices;
+    for (int i=0; i<4; ++i) {
+        do {
+            card_indices[i] = get_card_distribution()(get_random_generator());
+        } while (std::find(card_indices.begin(), card_indices.begin() + i, card_indices[i]) != card_indices.begin() + i);
+    }
+
+    GameState state;
+
+    state.op1 = card_indices[0];
+    state.op2 = card_indices[1];
+    state.ip1 = card_indices[2];
+    state.ip2 = card_indices[3];
+    state.bets.push(SMALL_BLIND);
+    state.bets.push(BIG_BLIND);
+
+    return state;
+}
+
+GameState initial_state(
+    float pot_size,
+    const std::array<uint8_t, 5>& board_cards) {
+
+    GameState state;
+    state.pfp_history = 0b111001;
+    state.pot_size = pot_size;
+    state.flp_seen = true;
+
+    state.fp1 = board_cards[0];
+    state.fp2 = board_cards[1];
+    state.fp3 = board_cards[2];
+    state.trn = board_cards[3]; 
+    state.rvr = board_cards[4]; 
+
+    if (state.trn > 0) {
+        state.trn_seen = true;
+        state.flp_history = 0b1001;
+    }
+
+    if (state.rvr > 0) {
+        state.rvr_seen = true;
+        state.trn_history = 0b1001;
+    }
+
+    return state;
+}
+
+GameState get_state(
+    GameState initial_state,
+    const std::vector<int>& history) {
+
+    for (int i = 0; i < history.size(); i++) {
+        int action = history[i];
+
+        if (initial_state.is_terminal) {
+            return initial_state;
+        } else if (initial_state.is_chance()) {
+            if (action >= 1 && action <= NUM_CARDS) {
+                initial_state.apply_index(action);
+            } else {
+                return initial_state;
+            }
+        } else {
+            if (action >= 0 && action < initial_state.num_actions()) {
+                initial_state.apply_index(action);
+            } else {
+                return initial_state;
+            }
+        }
+    }
+    return initial_state;
 }

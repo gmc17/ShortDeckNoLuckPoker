@@ -185,11 +185,11 @@ void Tree::build_tree(Node* node, const GameState& state) {
     }
 }
 
-int count_nodes(GameState state) {
-    // Terminal
-    if (state.is_terminal) return 0;
+float estimate_tree_memory(GameState state) {
+    // Terminal nodes in tree use about 20 bytes of memory
+    if (state.is_terminal) return 20.0f;
 
-    int res = 0;
+    int res = 0.0f;
 
     // Chance
     if (state.is_chance()) {
@@ -198,7 +198,7 @@ int count_nodes(GameState state) {
                 GameState new_state = state;
                 new_state.deal_card(c);
 
-                res += count_nodes(new_state);
+                res += 20.0f + estimate_tree_memory(new_state);
             }
         }
         return res;
@@ -211,7 +211,8 @@ int count_nodes(GameState state) {
         GameState new_state = state;
         new_state.apply_index(a);
 
-        res += 1 + count_nodes(new_state);
+        // 4 bytes in float
+        res += 4 * NUM_CARDS * NUM_CARDS * MAX_ACTIONS + estimate_tree_memory(new_state);
     }
 
     return res;

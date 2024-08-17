@@ -9,6 +9,7 @@
 #include <atomic>
 #include <mutex>
 
+#include "user_interface.h"
 #include "constants.h"
 #include "game_state.h"
 #include "info_set.h"
@@ -16,11 +17,11 @@
 #include "thread_pool.h"
 #include "tree.h"
 #include "helpers.h"
+#include "cfr_parameters.h"
 
-Tree cfr_plus(
-    int iterations, 
-    float pot_size,
-    const std::array<uint8_t, 5>& board_cards,
+void cfr_plus(
+    Tree& tree,
+    CFRParameters parameters,
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& op_range, 
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& ip_range);
 

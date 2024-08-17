@@ -16,8 +16,6 @@
 
 float calculate_exploitability(
     const Tree& tree,
-    float pot_size,
-    const std::array<uint8_t, 5>& board_cards,
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& op_reach_probabilities, 
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& ip_reach_probabilities);
 

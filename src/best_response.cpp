@@ -2,21 +2,19 @@
 
 float calculate_exploitability(
     const Tree& tree,
-    float pot_size,
-    const std::array<uint8_t, 5>& board_cards,
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& op_range, 
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& ip_range) {
 
-    GameState state = initial_state(pot_size, board_cards);
     const auto ones = create_ones_array();
-
     auto ip_info_set_utilities = best_response_traverse_tree(tree.get_root(), 1, ones, op_range, ip_range);
     auto op_info_set_utilities = best_response_traverse_tree(tree.get_root(), 0, ones, ip_range, op_range);
+
+    auto& decision_node = tree.get_root()->as_decision_node();
 
     std::array<float, 2> total_exploitability = {0.0f};
     for (int c1=1; c1<=NUM_CARDS; c1++) { 
         for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-            if (!(state.has_card(c1) || state.has_card(c2))) {
+            if (!(decision_node.has_card(c1) || decision_node.has_card(c2))) {
                 total_exploitability[0] += op_info_set_utilities[c1 - 1][c2 - 1];
                 total_exploitability[1] += ip_info_set_utilities[c1 - 1][c2 - 1]; 
             } 

@@ -1,4 +1,5 @@
 #include "info_set.h"
+#include "helpers.h"
 
 InfoSet::InfoSet(): player(false),
                     cr1(0),
