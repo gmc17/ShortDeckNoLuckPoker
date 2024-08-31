@@ -1,28 +1,6 @@
 #include "helpers.h"
 #include "constants.h"
 
-// void add_2d_arrays_simd(
-//     std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& res,
-//     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& b) {
-//     constexpr int SIMD_WIDTH = 4; // Number of floats in __m128
-//     constexpr int TOTAL_ELEMENTS = NUM_CARDS * NUM_CARDS;
-//     constexpr int SIMD_ITERATIONS = TOTAL_ELEMENTS / SIMD_WIDTH;
-//     float* res_ptr = reinterpret_cast<float*>(res.data());
-//     const float* b_ptr = reinterpret_cast<const float*>(b.data());
-
-//     for (int i = 0; i < SIMD_ITERATIONS; ++i) {
-//         __m128 vr = _mm_loadu_ps(res_ptr + i * SIMD_WIDTH);
-//         __m128 vb = _mm_loadu_ps(b_ptr + i * SIMD_WIDTH);
-//         __m128 vs = _mm_add_ps(vr, vb);
-//         _mm_storeu_ps(res_ptr + i * SIMD_WIDTH, vs);
-//     }
-
-//     // Handle remaining elements if TOTAL_ELEMENTS is not divisible by SIMD_WIDTH
-//     for (int i = SIMD_ITERATIONS * SIMD_WIDTH; i < TOTAL_ELEMENTS; ++i) {
-//         res_ptr[i] = res_ptr[i] + b_ptr[i];
-//     }
-// }
-
 void add_2d_arrays_simd(
     std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& res,
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& b) {
@@ -62,28 +40,6 @@ void multiply_2d_arrays_simd(
         res_ptr[i] = res_ptr[i] * b_ptr[i];
     }
 }
-
-// void multiply_2d_arrays_simd(
-//     std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& res,
-//     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& b) {
-//     constexpr int SIMD_WIDTH = 4; // Number of floats in __m128
-//     constexpr int TOTAL_ELEMENTS = NUM_CARDS * NUM_CARDS;
-//     constexpr int SIMD_ITERATIONS = TOTAL_ELEMENTS / SIMD_WIDTH;
-//     float* res_ptr = reinterpret_cast<float*>(res.data());
-//     const float* b_ptr = reinterpret_cast<const float*>(b.data());
-
-//     for (int i = 0; i < SIMD_ITERATIONS; ++i) {
-//         __m128 vr = _mm_loadu_ps(res_ptr + i * SIMD_WIDTH);
-//         __m128 vb = _mm_loadu_ps(b_ptr + i * SIMD_WIDTH);
-//         __m128 vm = _mm_mul_ps(vr, vb);
-//         _mm_storeu_ps(res_ptr + i * SIMD_WIDTH, vm);
-//     }
-
-//     // Handle remaining elements if TOTAL_ELEMENTS is not divisible by SIMD_WIDTH
-//     for (int i = SIMD_ITERATIONS * SIMD_WIDTH; i < TOTAL_ELEMENTS; ++i) {
-//         res_ptr[i] = res_ptr[i] * b_ptr[i];
-//     }
-// }
 
 void fast_initialize_array(std::array<float, NUM_CARDS>& array) {
     constexpr int SIMD_WIDTH = 8; // Number of floats in __m256
@@ -409,47 +365,55 @@ void print_reach_probabilities(const std::array<std::array<float, NUM_CARDS>, NU
     // }
 }
 
-void print_range(
-    const Tree& tree,
-    GameState initial_state,
-    const std::vector<int>& actions) {
+std::string get_color(float value) {
+    if (value < 0.20f) {
+        return "\033[31m";  // Red
+    } else if (value < 0.40f) {
+        return "\033[33m";  // Orange (using yellow ANSI code as it's closer to orange)
+    } else if (value < 0.60f) {
+        return "\033[93m";  // Yellow (bright yellow for better distinction)
+    } else if (value < 0.80f) {
+        return "\033[32m";  // Green
+    } else {
+        return "\033[36m";  // Cyan
+    }
+}
 
+void print_range(const Tree& tree, GameState initial_state, const std::vector<int>& actions) {
+    const int WIDTH = 60;
     Tree::Node* node = tree.get_node(actions);
     GameState state = get_state(initial_state, actions);
-
     if (!node->is_decision_node()) {
-        std::cout << "Error: Non-decision node passed to print_range function.\n";
+        std::cout << RED << "Error: Non-decision node passed to print_range function." << RESET << std::endl;
         return;
     }
-
     auto& decision_node = node->as_decision_node();
-
-    std::cout << "\n******************* Board ********************\n";
-
+    
+    std::cout << GREEN << "Cards: " << RESET;
     for (int c=1; c<=NUM_CARDS; c++) {
         if (decision_node.card_marker[c - 1]) {
-            std::cout << CARD_NAMES[rank(c)] << SUIT_NAMES[suit(c)];
+            std::cout << WHITE << CARD_NAMES[rank(c)] << SUIT_NAMES[suit(c)] << RESET;
         }
     }
-    std::cout << "\nPot: " << state.pot_size;
-
+    std::cout << RESET << std::endl;
+    std::cout << GREEN << "Pot: " << RESET << WHITE << state.pot_size << RESET << std::endl;
+    
     std::string player_name = (decision_node.player==0) ? "OOP" : "IP";
-    std::cout << "\n\n***************** " << player_name << " Range: ******************\n";
-
+    print_separator(WIDTH, '-');
+    print_centered(YELLOW + player_name + " Decision Node" + RESET, WIDTH);
+    print_separator(WIDTH, '-');
+    
     for (int a=0; a<decision_node.actions; a++) {
         std::array<std::array<float, 9>, 9> range;
         std::array<std::array<float, 9>, 9> count;
-
         for (int r=0; r<9; r++) {
             for (int c=0; c<9; c++) {
                 range[r][c] = count[r][c] = 0.0f;
             }
         }
-
         for (int c1=1; c1<=NUM_CARDS; c1++) {
             for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
                 if (!((decision_node.has_card(c1)) || (decision_node.has_card(c2)))) {
-
                     std::array<float, 7> strategy = decision_node.get_average_strategy(c1, c2);
                     std::array<int, 2> row_col = pocket_id_to_row_col(pocket_id(c1, c2));
                     
@@ -458,25 +422,26 @@ void print_range(
                 }
             }
         }
-
-        std::cout << "Action: " << state.action_to_string(state.index_to_action(a)) << "\n";
-
-        for (int r=0; r<10; r++) {
-            for (int c=0; c<10; c++) {
-                if (c==0 && r==0) {
-                    std::cout << "    ";
-                } else if (r==0 && c>0) {
-                    std::cout << CARD_NAMES[9-c] << "s   ";
-                } else if (c==0 && r>0) {
-                    std::cout << CARD_NAMES[9-r] << " ";
-                } else {
-                    std::cout << FIXED_FLOAT(range[r-1][c-1]/count[r-1][c-1]) << " ";
-                }
-            }
-            std::cout << "\n";
+        std::cout << GREEN << "Action: " << RESET << WHITE << state.action_to_string(state.index_to_action(a)) << RESET << std::endl;
+        print_separator(WIDTH, '-');
+        
+        // Print the header row
+        std::cout << "    ";
+        for (int c=9; c>0; c--) {
+            std::cout << WHITE << CARD_NAMES[c-1] << "s   " << RESET;
         }
-        std::cout << "\n";
-    }  
+        std::cout << std::endl;
+        
+        for (int r=0; r<9; r++) {
+            std::cout << WHITE << CARD_NAMES[8-r] << " " << RESET;
+            for (int c=0; c<9; c++) {
+                float value = (count[r][c] > 0) ? range[r][c] / count[r][c] : 0.0f;
+                std::cout << get_color(value) << std::fixed << std::setprecision(2) << value << RESET << " ";
+            }
+            std::cout << std::endl;
+        }
+        print_separator(WIDTH, '-');
+    }
 }
 
 GameState generate_random_initial_state() {
@@ -539,7 +504,7 @@ GameState get_state(
             return initial_state;
         } else if (initial_state.is_chance()) {
             if (action >= 1 && action <= NUM_CARDS) {
-                initial_state.apply_index(action);
+                initial_state.deal_card(action);
             } else {
                 return initial_state;
             }

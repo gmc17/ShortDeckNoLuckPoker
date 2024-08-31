@@ -6,8 +6,8 @@ PROFILEFLAGS = -g -fprofile-instr-generate -fcoverage-mapping
 SANITIZEFLAGS = -fsanitize=address -fno-omit-frame-pointer
 SANITIZECXXFLAGS = -Wall -std=c++20 -I./include -O1 -g
 LIBS = -L/usr/local/lib -lgtest -lgtest_main -pthread
-SRCS = src/main.cpp src/game_state.cpp src/info_set.cpp src/best_response.cpp src/tree.cpp src/cfr.cpp src/helpers.cpp src/user_interface.cpp
-TEST_SRCS = tests/tests.cpp src/main.cpp src/game_state.cpp src/info_set.cpp src/best_response.cpp src/tree.cpp src/cfr.cpp src/helpers.cpp src/user_interface.cpp
+SRCS = src/main.cpp src/game_state.cpp src/info_set.cpp src/best_response.cpp src/tree.cpp src/cfr.cpp src/helpers.cpp src/user_interface.cpp src/constants.cpp
+TEST_SRCS = tests/tests.cpp src/main.cpp src/game_state.cpp src/info_set.cpp src/best_response.cpp src/tree.cpp src/cfr.cpp src/helpers.cpp src/user_interface.cpp src/constants.cpp
 MAIN = main
 TEST = test_executable
 DEBUG = main_debug
@@ -20,7 +20,7 @@ all: $(MAIN) $(SHORTDECK) $(SANITIZE)
 $(MAIN): $(SRCS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-$(SHORTDECK): src/main.cpp src/game_state.cpp src/info_set.cpp src/cfr.cpp src/best_response.cpp src/tree.cpp src/helpers.cpp
+$(SHORTDECK): src/main.cpp src/game_state.cpp src/info_set.cpp src/cfr.cpp src/best_response.cpp src/tree.cpp src/helpers.cpp src/constants.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 $(TEST): $(TEST_SRCS)

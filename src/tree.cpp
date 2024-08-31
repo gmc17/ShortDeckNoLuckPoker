@@ -94,6 +94,12 @@ void Tree::DecisionNode::update_strategy_sum(int c1, int c2, const std::array<fl
     }
 }
 
+void Tree::DecisionNode::update_strategy_sum_cfr(int c1, int c2, const std::array<float, MAX_ACTIONS>& strategy) {
+    for (int a = 0; a < actions; ++a) {
+        strategy_sum[c1 - 1][c2 - 1][a] += strategy[a];
+    }
+}
+
 void Tree::DecisionNode::accumulate_regret(int action,
                                            const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_action_utilities,
                                            const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_utilities) {
@@ -103,6 +109,17 @@ void Tree::DecisionNode::accumulate_regret(int action,
         }
     }
 }
+
+void Tree::DecisionNode::accumulate_regret_cfr(int action,
+                                           const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_action_utilities,
+                                           const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_utilities) {
+    for (int c1=1; c1<=NUM_CARDS; c1++) {
+        for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+            regret_sum[c1 - 1][c2 - 1][action] += info_set_action_utilities[c1 - 1][c2 - 1] - info_set_utilities[c1 - 1][c2 - 1];
+        }
+    }
+}
+
 
 Tree::Tree(const GameState& root_state) : root(nullptr) {
     std::array<int, 5> board_cards = {root_state.fp1, root_state.fp2, root_state.fp3, root_state.trn, root_state.rvr};
@@ -185,11 +202,11 @@ void Tree::build_tree(Node* node, const GameState& state) {
     }
 }
 
-float estimate_tree_memory(GameState state) {
+unsigned long long estimate_tree_memory(GameState state) {
     // Terminal nodes in tree use about 20 bytes of memory
-    if (state.is_terminal) return 20.0f;
+    if (state.is_terminal) return 20;
 
-    int res = 0.0f;
+    unsigned long long res = 0;
 
     // Chance
     if (state.is_chance()) {
@@ -198,7 +215,7 @@ float estimate_tree_memory(GameState state) {
                 GameState new_state = state;
                 new_state.deal_card(c);
 
-                res += 20.0f + estimate_tree_memory(new_state);
+                res += 20 + estimate_tree_memory(new_state);
             }
         }
         return res;

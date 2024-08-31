@@ -8,7 +8,20 @@
 #include <sstream>
 #define FIXED_FLOAT(x) std::fixed << std::setprecision(2) << (x)
 
+//****************************** Output Formatting ******************************//
+
+const std::string RESET = "\033[0m";
+const std::string BOLD = "\033[1m";
+const std::string RED = "\033[31m";
+const std::string GREEN = "\033[32m";
+const std::string YELLOW = "\033[33m";
+const std::string BLUE = "\033[34m";
+const std::string MAGENTA = "\033[35m";
+const std::string CYAN = "\033[36m";
+const std::string WHITE = "\033[37m";
+
 //******************* (Currently Deprecated) CFR Parameters *******************//
+
 static const size_t STRATEGY_ARRAY_SIZE = 500007;
 
 static const float DCFR_ALPHA = 1.0f;
@@ -23,14 +36,15 @@ static const std::array<float, TURN_BUCKETS> TURN_BUCKETS_ARR = {0.15792f, 0.181
 static const std::array<float, RIVR_BUCKETS> RIVR_BUCKETS_ARR = {0.0107905f, 0.0201254f, 0.0299482f, 0.0395268f, 0.0485912f, 0.0545718f, 0.0677025f, 0.0765087f, 0.0888627f, 0.0969953f, 0.106989f, 0.118112f, 0.130495f, 0.137547f, 0.150257f, 0.162407f, 0.173653f, 0.182596f, 0.190947f, 0.200835f, 0.210978f, 0.219748f, 0.225634f, 0.233613f, 0.243688f, 0.252463f, 0.2599f, 0.275133f, 0.294297f, 0.311714f, 0.326977f, 0.33757f, 0.347697f, 0.356147f, 0.363269f, 0.372073f, 0.382862f, 0.393029f, 0.4009f, 0.40907f, 0.415611f, 0.421848f, 0.431871f, 0.43986f, 0.44975f, 0.46054f, 0.471763f, 0.48081f, 0.4942f, 0.506483f, 0.513647f, 0.525564f, 0.53884f, 0.552616f, 0.56375f, 0.572733f, 0.580203f, 0.587843f, 0.603704f, 0.61399f, 0.621144f, 0.633477f, 0.64604f, 0.656881f, 0.665088f, 0.673133f, 0.681325f, 0.691016f, 0.699762f, 0.70702f, 0.716738f, 0.721527f, 0.731067f, 0.745019f, 0.756321f, 0.76648f, 0.772362f, 0.772366f, 0.79141f, 0.798767f, 0.798779f, 0.810884f, 0.816545f, 0.81938f, 0.825674f, 0.832786f, 0.838951f, 0.852901f, 0.856927f, 0.862471f, 0.868417f, 0.883682f, 0.889364f, 0.901519f, 0.945114f, 0.951334f, 0.960516f, 0.964913f, 0.974751f, 1.0f};
 
 //****************************** Game Constants ******************************//
+
 static const float SMALL_BLIND = 1.0f;
 static const float BIG_BLIND = 2.0f;
-static const float STACK_SIZE = 100.0f;
 
 static const int NUM_ROUNDS = 3;
-static const int NUM_RANKS = 9900;
-static const int NUM_POCKET_PAIRS = 81;
+static const int NUM_SUITS = 4;
+static const int NUM_RANKS = 9;
 static const int NUM_CARDS = 36;
+static const int NUM_POCKET_PAIRS = 81;
 static const int MAX_ACTIONS = 7;
 
 static const std::array<std::string,  4> SUIT_NAMES = {"♠", "♥", "♦", "♣"};
@@ -40,10 +54,12 @@ static const std::array<int, 6> STRAIGHT_MASKS = {0b111110000, 0b011111000, 0b00
 static const std::array<int, 9> SINGLE_MASKS = {0b100000000, 0b010000000, 0b001000000, 0b000100000, 0b000010000, 0b000001000, 0b000000100, 0b000000010, 0b000000001};
 static const std::array<int, 9> OCTAL_MASKS = {0b111, 0b111000, 0b111000000, 0b111000000000, 0b111000000000000, 0b111000000000000000};
 static const std::unordered_map<std::string, int> STRING_TO_ACTION = {{"fold", 0}, {"check", 0}, {"call", 1}, {"bet", 1}, {"raise", 2}};
-static const std::array<float, 4> BET_SIZES = {0.5f, 0.75f, 1.0f, 2.0f};
-static const std::array<float, 4> RAISE_SIZES = {2.0f, 2.75f, 3.5f, 5.0f};
 static const std::array<std::string, 7> BET_ACTION_NAMES = {"Check", "Bet", "Bet", "Bet", "Bet", "All in", "Call"};
 static const std::array<std::string, 7> RAISE_ACTION_NAMES = {"Fold", "Raise", "Raise", "Raise", "Raise", "All in", "Call"};
+
+extern std::array<float, 4> BET_SIZES;
+extern std::array<float, 4> RAISE_SIZES;
+extern float STACK_SIZE;
 
 template<typename T>
 std::string stack_to_string(std::stack<T> s) {

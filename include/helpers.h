@@ -6,9 +6,11 @@
 #include <random>
 #include <regex>
 #include <iostream>
+#include <sstream>
 
 #include "game_state.h"
 #include "tree.h"
+#include "user_interface.h"
 
 void add_2d_arrays_simd(
     std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& res,
@@ -23,6 +25,8 @@ void fast_initialize_array(
 
 void print_reach_probabilities(
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& reach_probabilities);
+
+std::string get_color(float value);
 
 void print_range(
     const Tree& tree,

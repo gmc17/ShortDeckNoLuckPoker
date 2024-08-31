@@ -37,6 +37,10 @@ public:
         void accumulate_regret(int action,
         					   const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_action_utilities,
         					   const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_utilities);
+        void update_strategy_sum_cfr(int c1, int c2, const std::array<float, MAX_ACTIONS>& strategy);
+        void accumulate_regret_cfr(int action,
+        					   const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_action_utilities,
+        					   const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& info_set_utilities);
         inline bool has_card(int card) const {
     		return (card >= 1 && card <= NUM_CARDS) && card_marker[card - 1];
     	}
@@ -117,4 +121,4 @@ private:
     void build_tree(Node* node, const GameState& state);
 };
 
-float estimate_tree_memory(GameState state);
+unsigned long long estimate_tree_memory(GameState state);

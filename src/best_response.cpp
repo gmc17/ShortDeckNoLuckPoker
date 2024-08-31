@@ -6,8 +6,10 @@ float calculate_exploitability(
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& ip_range) {
 
     const auto ones = create_ones_array();
-    auto ip_info_set_utilities = best_response_traverse_tree(tree.get_root(), 1, ones, op_range, ip_range);
-    auto op_info_set_utilities = best_response_traverse_tree(tree.get_root(), 0, ones, ip_range, op_range);
+    int num_threads = get_cpu_cores();
+    ThreadPool pool(num_threads);
+    auto ip_info_set_utilities = best_response_traverse_tree(tree.get_root(), 1, 0, ones, op_range, ip_range, pool);
+    auto op_info_set_utilities = best_response_traverse_tree(tree.get_root(), 0, 0, ones, ip_range, op_range, pool);
 
     auto& decision_node = tree.get_root()->as_decision_node();
 
@@ -21,9 +23,10 @@ float calculate_exploitability(
         }
     }
     
-    std::cout << "Exploitability of OOP: " << total_exploitability[1] << "\n";
-    std::cout << "Exploitability of IP:  " << total_exploitability[0] << "\n";
-    std::cout << "Total exploitability:  " << (total_exploitability[0] + total_exploitability[1]) / 2.0f << "\n";
+    // std::cout << "Exploitability of OOP: " << total_exploitability[1] << "\n";
+    // std::cout << "Exploitability of IP:  " << total_exploitability[0] << "\n";
+    // std::cout << "Total exploitability:  " << (total_exploitability[0] + total_exploitability[1]) / 2.0f << "\n";
+    // std::cout << (total_exploitability[0] + total_exploitability[1]) / 2.0f << "\n";
     
     return (total_exploitability[0] + total_exploitability[1]) / 2.0f;
 }
@@ -31,9 +34,11 @@ float calculate_exploitability(
 std::array<std::array<float, NUM_CARDS>, NUM_CARDS> best_response_traverse_tree(
     Tree::Node* node,
     bool exploitative_player, 
+    bool chance_layer_seen,
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& reach_probabilities,
     const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& strategy_range,
-    const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& exploitative_player_range) {
+    const std::array<std::array<float, NUM_CARDS>, NUM_CARDS>& exploitative_player_range,
+    ThreadPool& pool) {
     
     if (node->is_terminal_node()) {
         auto temp = best_response_terminal_node_utility(node, exploitative_player, reach_probabilities, strategy_range, exploitative_player_range);
@@ -43,24 +48,68 @@ std::array<std::array<float, NUM_CARDS>, NUM_CARDS> best_response_traverse_tree(
     std::array<std::array<float, NUM_CARDS>, NUM_CARDS> info_set_utilities;
     for (int r=0; r<NUM_CARDS; r++) info_set_utilities[r].fill(0.0f);
 
+    // if (node->is_chance_node()) {
+    //     auto& chance_node = node->as_chance_node();
+    //     int num = chance_node.num;
+
+    //     for (int c=1; c<=NUM_CARDS; c++) {
+    //         if (!chance_node.has_card(c)) {
+    //             auto new_reach_probabilities = update_chance_reach_probabilities(chance_node.children[c - 1].get(), num, reach_probabilities);
+    //             std::array<std::array<float, NUM_CARDS>, NUM_CARDS> temp = best_response_traverse_tree(chance_node.children[c - 1].get(), exploitative_player, *new_reach_probabilities, strategy_range, exploitative_player_range);
+
+    //             for (int c1=1; c1<=NUM_CARDS; c1++) {
+    //                 for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+    //                     if (!(chance_node.has_card(c1) || chance_node.has_card(c2) || (c1==c) || (c2==c))) {
+    //                         info_set_utilities[c1 - 1][c2 - 1] += temp[c1 - 1][c2 - 1];
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     return info_set_utilities;
+    // }
+
     if (node->is_chance_node()) {
         auto& chance_node = node->as_chance_node();
         int num = chance_node.num;
-
+        std::vector<std::future<std::array<std::array<float, NUM_CARDS>, NUM_CARDS>>> futures;
+        
         for (int c=1; c<=NUM_CARDS; c++) {
             if (!chance_node.has_card(c)) {
-                auto new_reach_probabilities = update_chance_reach_probabilities(chance_node.children[c - 1].get(), num, reach_probabilities);
-                std::array<std::array<float, NUM_CARDS>, NUM_CARDS> temp = best_response_traverse_tree(chance_node.children[c - 1].get(), exploitative_player, *new_reach_probabilities, strategy_range, exploitative_player_range);
-
-                for (int c1=1; c1<=NUM_CARDS; c1++) {
-                    for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
-                        if (!(chance_node.has_card(c1) || chance_node.has_card(c2) || (c1==c) || (c2==c))) {
-                            info_set_utilities[c1 - 1][c2 - 1] += temp[c1 - 1][c2 - 1];
+                if (!chance_layer_seen) {
+                    futures.push_back(pool.enqueue([&, c, num]() {
+                        auto new_reach_probabilities = update_chance_reach_probabilities(chance_node.children[c - 1].get(), num, reach_probabilities);
+                        auto result = best_response_traverse_tree(chance_node.children[c - 1].get(), exploitative_player, 1, *new_reach_probabilities, strategy_range, exploitative_player_range, pool);
+                        for (int c1=1; c1<=NUM_CARDS; c1++) {
+                            for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+                                if (chance_node.has_card(c1) || chance_node.has_card(c2) || (c1==c) || (c2==c)) {
+                                    result[c1 - 1][c2 - 1] = 0.0f;
+                                }
+                            }
+                        }
+                        return result;
+                    }));
+                } else {
+                    auto new_reach_probabilities = update_chance_reach_probabilities(chance_node.children[c - 1].get(), num, reach_probabilities);
+                    auto result = best_response_traverse_tree(chance_node.children[c - 1].get(), exploitative_player, 1, *new_reach_probabilities, strategy_range, exploitative_player_range, pool);
+                    for (int c1=1; c1<=NUM_CARDS; c1++) {
+                        for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
+                            if (chance_node.has_card(c1) || chance_node.has_card(c2) || (c1==c) || (c2==c)) {
+                                result[c1 - 1][c2 - 1] = 0.0f;
+                            }
                         }
                     }
+                    add_2d_arrays_simd(info_set_utilities, result);
                 }
             }
         }
+
+        // combine thread results
+        for (auto& future : futures) {
+            auto result = future.get();
+            add_2d_arrays_simd(info_set_utilities, result);
+        }
+
         return info_set_utilities;
     }
 
@@ -70,7 +119,7 @@ std::array<std::array<float, NUM_CARDS>, NUM_CARDS> best_response_traverse_tree(
     if (decision_node.player != exploitative_player) {
         for (int a=0; a<actions; a++) {
             auto new_reach_probabilities = update_reach_probabilities_using_average_strategy(node, a, reach_probabilities);
-            std::array<std::array<float, NUM_CARDS>, NUM_CARDS> temp = best_response_traverse_tree(decision_node.children[a].get(), exploitative_player, *new_reach_probabilities, strategy_range, exploitative_player_range);
+            std::array<std::array<float, NUM_CARDS>, NUM_CARDS> temp = best_response_traverse_tree(decision_node.children[a].get(), exploitative_player, chance_layer_seen, *new_reach_probabilities, strategy_range, exploitative_player_range, pool);
 
             for (int c1=1; c1<=NUM_CARDS; c1++) {
                 for (int c2=c1+1; c2<=NUM_CARDS; c2++) {
@@ -88,7 +137,7 @@ std::array<std::array<float, NUM_CARDS>, NUM_CARDS> best_response_traverse_tree(
     for (int r=0; r<NUM_CARDS; r++) info_set_utilities[r].fill(std::numeric_limits<float>::lowest());
     
     for (int a=0; a<actions; a++) {
-        auto temp = best_response_traverse_tree(decision_node.children[a].get(), exploitative_player, reach_probabilities, strategy_range, exploitative_player_range);
+        auto temp = best_response_traverse_tree(decision_node.children[a].get(), exploitative_player, chance_layer_seen, reach_probabilities, strategy_range, exploitative_player_range, pool);
 
         for (int c1=1; c1<=NUM_CARDS; c1++) {
             for (int c2=c1+1; c2<=NUM_CARDS; c2++) {

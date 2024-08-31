@@ -8,38 +8,54 @@ void cfr_plus(
     
     double total_time = 0.0f;
     auto start = std::chrono::high_resolution_clock::now();
-
     const auto ones = create_ones_array();
     int num_threads = get_cpu_cores();
     ThreadPool pool(num_threads);
-
     int t = 1;
     float current_exploitability = 10;
+    
+    // To store the previous log message
+    std::string previous_log;
+    
     while (t <= parameters.max_iterations && 
            parameters.exploitability_goal < current_exploitability) {
-
         float delay = 0.0f;
         float weight = std::max(t - delay, 0.0f);
         
         cfr_plus_traverse_tree(tree.get_root(), 0, 0, weight, ones, ip_range, op_range, pool);
         cfr_plus_traverse_tree(tree.get_root(), 1, 0, weight, ones, op_range, ip_range, pool);
-
-        if (t % parameters.log_interval==0) {
-            std::cout << "Iteration " << t << " complete.\n";
+        
+        if (t % parameters.log_interval == 0) {
             current_exploitability = calculate_exploitability(tree, op_range, ip_range);
-            std::cout << "\n";
+            
+            // Clear the previous log message
+            if (!previous_log.empty()) {
+                for (size_t i = 0; i < std::count(previous_log.begin(), previous_log.end(), '\n'); ++i) {
+                    std::cout << "\033[A\033[K";
+                }
+            }
+            
+            // Prepare and store the new log message
+            std::stringstream ss;
+            ss << CYAN << "Iteration " << t << " complete.\n" << RESET
+               << GREEN << "Exploitability: " << RESET << WHITE 
+               << std::fixed << std::setprecision(6) << current_exploitability << RESET << "\n\n";
+            previous_log = ss.str();
+            
+            // Print the new log message
+            std::cout << previous_log;
         }
-
         t++;
     }
     t--;
-
+    
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     total_time += elapsed.count();
-
+    
     std::cout << t << " iterations of CFR+: "
-              << total_time << " seconds. " << t/total_time << " iterations/second." << "\n";
+              << std::fixed << std::setprecision(2) << total_time << " seconds. " 
+              << std::fixed << std::setprecision(2) << t/total_time << " iterations/second." << "\n";
 }
 
 std::unique_ptr<std::array<std::array<float, NUM_CARDS>, NUM_CARDS>> cfr_plus_traverse_tree( 
