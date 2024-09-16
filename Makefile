@@ -77,3 +77,4 @@ exploit: $(SHORTDECK)
 
 clean:
 	rm -f $(MAIN) $(TEST) $(DEBUG) $(PROFILE) $(SHORTDECK) $(SANITIZE) *.profraw *.profdata gmon.out profile_output.txt *.jar *.dSYM
+	find . -name "*.o" -type f -delete
