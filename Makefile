@@ -1,4 +1,9 @@
-.PHONY: all clean test run debug profile quick train play generate-ars sanitize
+.PHONY: all clean test run debug profile quick train play generate-ars sanitize wasm
+
+WASM = poker_solver.js
+EMXX = emcc
+EMXXFLAGS = --bind -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="createPokerSolverModule" -I./include
+
 CXX = g++
 CXXFLAGS = -Wall -std=c++20 -I./include -Ofast -march=native -mtune=native -flto -ffast-math -funroll-loops -fno-rtti -finline-functions
 DEBUGFLAGS = -g -O0 -DDEBUG
