@@ -400,7 +400,7 @@ void print_range(const Tree& tree, GameState initial_state, const std::vector<in
     
     std::string player_name = (decision_node.player==0) ? "OOP" : "IP";
     print_separator(WIDTH, '-');
-    print_centered(YELLOW + player_name + " Decision Node" + RESET, WIDTH);
+    print_centered(player_name + " Decision Node", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     
     for (int a=0; a<decision_node.actions; a++) {

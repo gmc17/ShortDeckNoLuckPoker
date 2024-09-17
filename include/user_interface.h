@@ -33,7 +33,7 @@ void read_range_file(const std::string& filename, std::array<std::array<float, N
 
 void explore_tree(const Tree& tree, const GameState& root_state);
 void display_current_state(const std::vector<GameState>& states, const std::vector<int>& actions);
-void print_centered(const std::string& text, int width);
+void print_centered(const std::string& text, const std::string& color, int width);
 void print_separator(int width, char sep = '-');
 uint8_t parse_card_input(const std::string& input, const GameState& current_state);
 void get_bet_raise_sizes();

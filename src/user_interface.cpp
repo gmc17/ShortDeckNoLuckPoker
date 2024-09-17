@@ -5,41 +5,41 @@ void user_interface() {
     const int WIDTH = 70;
 
     print_separator(WIDTH, '=');
-    print_centered(BOLD + "ShortDeckNoLuck" + RESET, WIDTH);
+    print_centered("ShortDeckNoLuck", BOLD, WIDTH);
     print_separator(WIDTH, '=');
 
     /************************** Card input *************************/
-    print_centered(YELLOW + "Board Cards" + RESET, WIDTH);
+    print_centered("Board Cards", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     std::array<uint8_t, 5> board_cards = get_board_cards();
     std::cout << std::endl;
 
     /************************** Pot Input **************************/
-    print_centered(YELLOW + "Pot Size" + RESET, WIDTH);
+    print_centered("Pot Size", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     float pot_size = get_pot_size();
     std::cout << std::endl;
 
     /******************** Starting Stack Input *********************/
-    print_centered(YELLOW + "Starting Stack Size" + RESET, WIDTH);
+    print_centered("Starting Stack Size", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     STACK_SIZE = get_starting_stack_size();
     std::cout << std::endl;
 
     /************************* Range Input *************************/
-    print_centered(YELLOW + "Range" + RESET, WIDTH);
+    print_centered("Range", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     auto [ip_range, op_range] = get_ranges();
     std::cout << std::endl;
 
     /****************** Bet & Raise Sizings Input ******************/
-    print_centered(YELLOW + "Bet & Raise Sizes" + RESET, WIDTH);
+    print_centered("Bet & Raise Sizes", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     get_bet_raise_sizes();
     std::cout << std::endl;
 
     /************************ Tree Building ************************/
-    print_centered(YELLOW + "Tree" + RESET, WIDTH);
+    print_centered("Tree", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     GameState root_state = initial_state(pot_size, board_cards);
 
@@ -65,21 +65,21 @@ void user_interface() {
     std::cout << std::endl;
 
     /*************************** CFR+ ***************************/
-    print_centered(YELLOW + "CFR+ Parameters" + RESET, WIDTH);
+    print_centered("CFR+ Parameters", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     CFRParameters parameters = get_cfr_parameters();
     cfr_plus(tree, parameters, ip_range, op_range);
     std::cout << std::endl;
 
     /********************** Display Ranges **********************/
-    print_centered(YELLOW + "Player Ranges" + RESET, WIDTH);
+    print_centered("Player Ranges", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     std::vector<int> history = {};
     print_range(tree, root_state, history);
     std::cout << std::endl;
 
     /*********************** Explore Tree ***********************/
-    print_centered(YELLOW + "ShortDeckNoLuck Tree Explorer" + RESET, WIDTH);
+    print_centered("Tree Explorer", YELLOW, WIDTH);
     print_separator(WIDTH, '-');
     explore_tree(tree, root_state);
     std::cout << std::endl;
@@ -562,9 +562,9 @@ CFRParameters get_cfr_parameters() {
     return parameters;
 }
 
-void print_centered(const std::string& text, int width) {
+void print_centered(const std::string& text, const std::string& color, int width) {
     int padding = (width - text.length()) / 2;
-    std::cout << std::string(padding, ' ') << text << std::endl;
+    std::cout << color << std::string(padding, ' ') << text << RESET << std::endl;
 }
 
 void print_separator(int width, char sep) {
@@ -621,7 +621,7 @@ void explore_tree(const Tree& tree, const GameState& root_state) {
         
         // Print header
         print_separator(WIDTH, '=');
-        print_centered(BOLD + "Tree Explorer" + RESET, WIDTH);
+        print_centered("Tree Explorer", BOLD, WIDTH);
         print_separator(WIDTH, '=');
 
         // Display current state

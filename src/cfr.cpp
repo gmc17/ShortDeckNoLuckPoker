@@ -39,7 +39,7 @@ void cfr_plus(
             std::stringstream ss;
             ss << CYAN << "Iteration " << t << " complete.\n" << RESET
                << GREEN << "Exploitability: " << RESET << WHITE 
-               << std::fixed << std::setprecision(6) << current_exploitability << RESET << "\n\n";
+               << std::fixed << std::setprecision(6) << current_exploitability << RESET;
             previous_log = ss.str();
             
             // Print the new log message
