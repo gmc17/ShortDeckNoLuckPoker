@@ -36,7 +36,7 @@ Short Deck Poker, also known as Six Plus Hold'em, is a variant of Texas Hold'em 
 
 ## Tree Explorer
 
-![Demo GIF](images/demo.gif)
+![Demo GIF](images/demo_faster.gif)
 
 ## Contributing
 
