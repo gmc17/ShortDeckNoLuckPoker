@@ -34,7 +34,9 @@ Short Deck Poker, also known as Six Plus Hold'em, is a variant of Texas Hold'em 
 - C++ compiler with C++20 support
 - Make
 
-## Tree Explorer
+## Features
+
+- Complete with parameter input, tree builder, and tree explorer.
 
 ![Demo GIF](images/demo_final.gif)
 
@@ -59,3 +61,4 @@ We would like to thank the authors of the following papers, whose work has been 
 
 2. Johanson, M., Waugh, K., Bowling, M., Zinkevich, M.: [Accelerating Best Response Calculation in Large Extensive Games](https://cdn.aaai.org/ocs/ws/ws1014/7083-30526-1-PB.pdf). In: Proceedings of the Twenty-Second International Joint Conference on Artificial Intelligence (IJCAI), pp. 258-265 (2011)
    - We utilized the O(n^2) --> O(nlogn) speedup for terminal node evaluation as described in this paper.
+
