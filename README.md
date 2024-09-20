@@ -1,4 +1,4 @@
-# ♠️♦️ ShortDeckNoLuckPoker ♣️♥️
+# ♦️♠️ ShortDeckNoLuckPoker ♣️♥️
 
 ![Release](https://img.shields.io/badge/release-v0.0.1-blue)
 [![license](https://img.shields.io/github/license/gmc17/ShortDeckNoLuckPoker?style=flat-square)](https://github.com/gmc17/ShortDeckNoLuckPoker/blob/master/LICENSE)
